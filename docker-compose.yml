@@ -1,0 +1,50 @@
+# RaktSetu local development database.
+#
+# Usage (PowerShell):
+#   docker compose up -d db      # start PostgreSQL 16 on 127.0.0.1:5432
+#   npm run db:use:postgres      # switch prisma provider + push schema
+#   Copy-Item .env.example .env  # then set DATABASE_URL as shown below
+#
+# The dev credentials below are intentionally public — never reuse them outside
+# your machine. For production use the composition documented in
+# docs/deployment.md (strong POSTGRES_PASSWORD via env var).
+#
+# An optional full-stack profile exists for container runs once the ops-wave
+# Dockerfile lands:  docker compose --profile app up -d
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: raktsetu
+      POSTGRES_PASSWORD: raktsetu_dev
+      POSTGRES_DB: raktsetu
+    ports:
+      # Loopback only: the dev database is never exposed to the network.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raktsetu -d raktsetu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    profiles: ["app"]
+    build: .
+    environment:
+      NODE_ENV: production
+      # Inside the compose network the database host is the service name `db`.
+      DATABASE_URL: postgresql://raktsetu:raktsetu_dev@db:5432/raktsetu
+      APP_SECRET: ${APP_SECRET:?set APP_SECRET (openssl rand -base64 32)}
+      DEMO_MODE: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  pgdata:

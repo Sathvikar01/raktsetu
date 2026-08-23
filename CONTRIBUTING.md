@@ -10,7 +10,8 @@ Prerequisites: Node.js 20+. Docker optional (PostgreSQL for production-parity te
 npm install
 Copy-Item .env.example .env
 npm run db:push          # SQLite dev database
-npm run seed             # synthetic demo world (wave-2)
+# PostgreSQL parity instead?  docker compose up -d db   then   npm run db:use:postgres
+npm run seed             # synthetic demo world
 npm run dev
 ```
 
