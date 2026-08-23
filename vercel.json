@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node scripts/db-switch.mjs postgres && prisma generate && next build"
+  "buildCommand": "node scripts/db-switch.mjs postgres && prisma generate && node -e \"require('fs').rmSync('.next/cache',{recursive:true,force:true})\" && next build"
 }
