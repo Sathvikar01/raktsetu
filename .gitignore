@@ -22,3 +22,5 @@ coverage/
 
 # vercel
 .vercel/
+.vercel
+.env.production
