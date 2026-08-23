@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Pin the workspace root: stray package-lock.json files above this repo
+  // (OneDrive sync) otherwise make Next infer the wrong root.
+  outputFileTracingRoot: __dirname,
   eslint: { ignoreDuringBuilds: true },
   headers: async () => [
     {
