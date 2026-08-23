@@ -8,9 +8,17 @@ function required(name: string, fallback?: string): string {
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
-  APP_SECRET: process.env.APP_SECRET ?? "",
-  DATABASE_URL: process.env.DATABASE_URL ?? "",
-  DEMO_MODE: process.env.DEMO_MODE === "true" || process.env.DEMO_MODE === "1",
+  APP_SECRET: required(
+    "APP_SECRET",
+    process.env.NODE_ENV === "production"
+      ? undefined
+      : "dev-insecure-secret-change-me-0123456789abcdef"
+  ),
+  DATABASE_URL: required(
+    "DATABASE_URL",
+    process.env.NODE_ENV === "production" ? undefined : "file:./dev.db"
+  ),
+  DEMO_MODE: process.env.DEMO_MODE === "true",
   REPLAY_WINDOW_SECONDS: Number(process.env.REPLAY_WINDOW_SECONDS ?? 300),
   PRIVACY_MIN_COHORT: Number(process.env.PRIVACY_MIN_COHORT ?? 5),
   PRIVACY_MIN_AGGREGATE: Number(process.env.PRIVACY_MIN_AGGREGATE ?? 10),
@@ -19,9 +27,4 @@ export const env = {
     return this.NODE_ENV === "production";
   },
 };
-
-if (!env.APP_SECRET) {
-  // Dev/demo convenience; production deployments must set APP_SECRET (see docs/deployment.md).
-  env.APP_SECRET = "dev-insecure-secret-change-me-0123456789abcdef";
-}
 export const APP_NAME = "RaktSetu";

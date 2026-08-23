@@ -8,7 +8,6 @@ import type { SessionUser } from "@/lib/auth/session";
 import { BloodBankSection } from "./sections/BloodBankSection";
 import { HospitalSection } from "./sections/HospitalSection";
 import { RecentActivity } from "./sections/RecentActivity";
-import { SimulatorPanel } from "./components/SimulatorPanel";
 
 export const metadata: Metadata = { title: "Staff portal" };
 
@@ -75,9 +74,6 @@ export default async function StaffPage({
   const selected = orgs.find((o) => o.id === orgParam) ?? orgs[0]!;
   const showBloodBank = selected.kind === "BLOOD_BANK" || selected.kind === "BLOOD_BANK_AND_HOSPITAL";
   const showHospital = selected.kind === "HOSPITAL" || selected.kind === "BLOOD_BANK_AND_HOSPITAL";
-  // Simulator hard gate (brief): BOTH permission and DEMO_MODE — hidden entirely otherwise.
-  const showSimulator = can(user.role, "simulator:use") && process.env.DEMO_MODE === "true";
-
   return (
     <div className="space-y-8">
       <div>
@@ -125,7 +121,6 @@ export default async function StaffPage({
         {showBloodBank ? <BloodBankSection organizationId={selected.id} /> : null}
         {showHospital ? <HospitalSection organizationId={selected.id} /> : null}
         <RecentActivity organizationId={selected.id} />
-        {showSimulator ? <SimulatorPanel /> : null}
       </div>
     </div>
   );

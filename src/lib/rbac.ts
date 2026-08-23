@@ -13,12 +13,12 @@ const PERMISSIONS: Record<Role, Set<string>> = {
   ]),
   ORG_STAFF: new Set([
     "donation:create", "component:create", "event:ingest:manual",
-    "integration:read:own-org", "simulator:use",
+    "integration:read:own-org",
   ]),
   ORG_ADMIN: new Set([
     "donation:create", "component:create", "event:ingest:manual",
     "integration:read:own-org", "integration:write:own-org",
-    "simulator:use", "org:read", "audit:read:own-org",
+    "org:read", "audit:read:own-org",
   ]),
   PLATFORM_ADMIN: new Set([
     "org:list", "org:manage", "integration:manage:any", "audit:read:any",

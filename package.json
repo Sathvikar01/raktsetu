@@ -16,8 +16,7 @@
     "db:push": "prisma db push --skip-generate",
     "db:use:sqlite": "node scripts/db-switch.mjs sqlite && prisma generate && prisma db push --skip-generate",
     "db:use:postgres": "node scripts/db-switch.mjs postgres && prisma generate && prisma db push --skip-generate",
-    "seed": "tsx scripts/seed.ts",
-    "simulate": "tsx scripts/simulate.ts"
+    "seed": "tsx scripts/seed.ts"
   },
   "prisma": {
     "schema": "src/packages/database/schema.prisma"

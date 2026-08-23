@@ -1,0 +1,32 @@
+# CodeRabbit configuration for RaktSetu production review
+# https://docs.coderabbit.ai
+language: en-US
+tone: thorough
+early_access: true
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  collapse_walkthrough: true
+ast_grep:
+  - id: no-console-in-prod
+    language: typescript
+    rule:
+      pattern: console.log($$$)
+    message: "console.log in production code — use structured audit logging"
+  - id: hardcoded-demo-secret
+    language: typescript
+    rule:
+      pattern: "demo-pass-1234"
+    message: "hardcoded demo credential — must be gated by DEMO_MODE"
+path_instructions:
+  - path: "src/lib/services/ingest.ts"
+    instructions: "Verify idempotency (sourceSystem+sourceEventId unique), tenant authz deny-by-default, disclosure decision provenance, no AI in disclosure path"
+  - path: "src/packages/privacy/**"
+    instructions: "Verify deterministic disclosure engine, re-identification suppression, cohort thresholds PI-1..PI-13"
+  - path: "src/lib/auth/**"
+    instructions: "Verify scrypt hashing, httpOnly SameSite cookies, CSRF double-submit, no timing leaks"
+  - path: "src/lib/services/account.ts"
+    instructions: "Verify TOCTOU on linkDonation, P2002 handling, rate-limit key normalization"
+tools:
+  related_issues: true
+  documentation: true

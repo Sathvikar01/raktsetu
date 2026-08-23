@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/packages/database/client";
+import { env } from "@/lib/env";
 import { encryptSecret, randomToken } from "@/lib/crypto";
 import { recordAudit } from "@/lib/audit";
 
@@ -56,6 +57,9 @@ export async function createIntegrationWithCredential(
   adapterType: string,
   description?: string | null
 ): Promise<CreateIntegrationResult> {
+  if (adapterType.startsWith("MOCK_") && (env.isProd || !env.DEMO_MODE)) {
+    throw new Error("Mock adapters are not available in production. Configure a real adapter.");
+  }
   const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { id: true } });
   if (!org) throw new ProvisioningNotFoundError("Organization not found");
 
