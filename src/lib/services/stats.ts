@@ -33,6 +33,33 @@ export function meetsAggregateThreshold(count: number): boolean {
 export async function getCommunityStats(): Promise<CommunityStats> {
   const min = env.DEMO_MODE ? Math.min(env.PRIVACY_MIN_AGGREGATE, 3) : env.PRIVACY_MIN_AGGREGATE;
 
+  // Public pages must render even before the database is provisioned or
+  // reachable (first-run deployments, maintenance windows): degrade to zeroed
+  // aggregates, which every consumer already renders as empty states.
+  try {
+    return await queryCommunityStats(min);
+  } catch (err) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("community stats unavailable:", err instanceof Error ? err.message : err);
+      return emptyStats();
+    }
+    throw err;
+  }
+}
+
+function emptyStats(): CommunityStats {
+  return {
+    donationsTracked: 0,
+    componentsProcessed: 0,
+    transfusionEvents: 0,
+    bloodCentres: 0,
+    hospitals: 0,
+    byComponentType: [],
+    monthlyDonations: [],
+  };
+}
+
+async function queryCommunityStats(min: number): Promise<CommunityStats> {
   const [donations, components, transfusions, bbCount, hospCount, byType] = await Promise.all([
     prisma.donation.count(),
     prisma.bloodComponent.count(),
