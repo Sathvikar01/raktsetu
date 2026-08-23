@@ -1,4 +1,5 @@
 import "server-only";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/packages/database/client";
 import { hashPassword, verifyPassword, passwordIssues } from "@/lib/auth/passwords";
 import { createSession, destroySession } from "@/lib/auth/session";
@@ -20,24 +21,32 @@ export type AuthFailure = "INVALID" | "RATE_LIMITED" | "EXISTS" | "WEAK_PASSWORD
 export async function registerDonor(
   input: RegisterInput
 ): Promise<{ ok: true; userId: string } | { ok: false; reason: AuthFailure }> {
-  if (rateLimit(`register:${input.email}`, 5, AUTH_WINDOW_MS).ok === false) {
+  const email = input.email.trim().toLowerCase();
+  if (rateLimit(`register:${email}`, 5, AUTH_WINDOW_MS).ok === false) {
     return { ok: false, reason: "RATE_LIMITED" };
   }
-  const email = input.email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, reason: "INVALID" };
   if (passwordIssues(input.password).length > 0) return { ok: false, reason: "WEAK_PASSWORD" };
   const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (exists) return { ok: false, reason: "EXISTS" };
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash: hashPassword(input.password),
-      displayName: input.displayName.slice(0, 80),
-      role: "DONOR",
-      notificationPreference: { create: {} },
-    },
-  });
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashPassword(input.password),
+        displayName: input.displayName.slice(0, 80),
+        role: "DONOR",
+        notificationPreference: { create: {} },
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return { ok: false, reason: "EXISTS" };
+    }
+    throw err;
+  }
   await prisma.consentRecord.create({
     data: {
       subjectType: "DONOR_PLATFORM",
@@ -103,15 +112,25 @@ export async function linkDonationToDonor(
   });
   if (!donation || donation.linkStatus !== "UNLINKED") return { ok: false };
 
-  let profileId = donorProfileId;
-  if (!profileId) {
-    const profile = await prisma.donorProfile.create({ data: { userId } });
-    profileId = profile.id;
+  class LinkLostRaceError extends Error {}
+  try {
+    await prisma.$transaction(async (tx) => {
+      let profileId = donorProfileId;
+      if (!profileId) {
+        profileId = (await tx.donorProfile.create({ data: { userId } })).id;
+      }
+      // Conditional claim: only an UNLINKED donation may transition, so two
+      // concurrent claims of one code cannot both succeed.
+      const claimed = await tx.donation.updateMany({
+        where: { id: donation.id, linkStatus: "UNLINKED" },
+        data: { donorProfileId: profileId, linkStatus: "LINKED" },
+      });
+      if (claimed.count === 0) throw new LinkLostRaceError();
+    });
+  } catch (err) {
+    if (err instanceof LinkLostRaceError) return { ok: false };
+    throw err;
   }
-  await prisma.donation.update({
-    where: { id: donation.id },
-    data: { donorProfileId: profileId, linkStatus: "LINKED" },
-  });
   await recordAudit({
     actorType: "USER", actorId: userId, action: "donation.linked",
     resourceType: "Donation", resourceId: donation.id, orgId: donation.organizationId,
