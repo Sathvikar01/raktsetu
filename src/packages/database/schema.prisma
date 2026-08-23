@@ -1,0 +1,385 @@
+// RaktSetu — database schema
+// Portable across PostgreSQL (primary, docker-compose) and SQLite (zero-dep dev/test fallback).
+// Consequences of portability: enums are Strings validated by zod in packages/schemas,
+// and JSON payloads are stored as serialized String fields (payloadJson) — see lib/json.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         String   @default("DONOR") // DONOR | ORG_STAFF | ORG_ADMIN | PLATFORM_ADMIN
+  status       String   @default("ACTIVE") // ACTIVE | DISABLED
+  mfaEnabled   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  donorProfile          DonorProfile?
+  sessions              Session[]
+  orgMemberships        OrganizationUser[]
+  notifications         Notification[]
+  notificationPreference NotificationPreference?
+  passwordResetTokens   PasswordResetToken[]
+}
+
+model DonorProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodGroup      String?
+  birthYear       Int?
+  phone           String? // optional, minimized; only for notification delivery if opted in
+  preferredLocale String   @default("en")
+  createdAt       DateTime @default(now())
+
+  donations Donation[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  ipHash    String?
+  userAgent String?
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Organizations (blood banks / hospitals) & staff membership
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  kind        String // BLOOD_BANK | HOSPITAL | BLOOD_BANK_AND_HOSPITAL
+  status      String   @default("PENDING_APPROVAL") // PENDING_APPROVAL | ACTIVE | SUSPENDED
+  regionLabel String? // coarse public-safe label e.g. "Pune, Maharashtra"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  facilities      Facility[]
+  members         OrganizationUser[]
+  donations       Donation[]
+  lifecycleEvents LifecycleEvent[]
+  integrations    Integration[]
+  recipientRefs   RecipientContext[]
+}
+
+model Facility {
+  id             String  @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  code           String
+  city           String?
+  state          String?
+  kind           String // COLLECTION_CENTRE | PROCESSING_LAB | HOSPITAL | STORE
+  externalCode   String?
+
+  @@unique([organizationId, code])
+}
+
+model OrganizationUser {
+  id        String   @id @default(uuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String // ORG_ADMIN | STAFF
+  status    String   @default("ACTIVE") // ACTIVE | DISABLED
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Donations, identifiers, components, lineage
+// ---------------------------------------------------------------------------
+
+model Donation {
+  id               String   @id @default(uuid())
+  donorProfileId   String?
+  donorProfile     DonorProfile? @relation(fields: [donorProfileId], references: [id])
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  facilityId       String?
+  externalDonationId String // blood bank's own donation/unit id
+  din              String? // ISBT 128 Donation Identification Number when present
+  donatedAt        DateTime
+  linkStatus       String   @default("UNLINKED") // UNLINKED | LINKED | REVOKED
+  linkCode         String   @unique @default(cuid())
+  recordedVia      String? // integrationId or "MANUAL" or "SEED"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  components         BloodComponent[]
+  events             LifecycleEvent[]
+
+  @@unique([organizationId, externalDonationId])
+}
+
+model ExternalIdentifier {
+  id             String @id @default(uuid())
+  entityType     String // DONATION | COMPONENT
+  entityId       String // polymorphic id (no FK) — resolved via entityType
+  scheme         String // ISBT128_DIN | FACILITY_BARCODE | ERAKTKOSH_ID | HOSPITAL_LOCAL
+  value          String
+  organizationId String
+
+  @@unique([scheme, value])
+}
+
+model BloodComponent {
+  id                 String   @id @default(uuid())
+  donationId         String
+  donation           Donation @relation(fields: [donationId], references: [id])
+  componentType      String // RBC | PLASMA | PLATELET | WHOLE_BLOOD | OTHER
+  externalComponentId String?
+  preparedAt         DateTime?
+  currentDerivedState String  @default("PREPARING") // derived cache; events are truth
+  derivedAt          DateTime?
+  createdAt          DateTime @default(now())
+
+  events            LifecycleEvent[]
+  lineageParents    ComponentLineage[] @relation("child")
+  lineageChildren   ComponentLineage[] @relation("parent")
+  recipientContexts RecipientContext[]
+
+  @@unique([donationId, componentType])
+}
+
+model ComponentLineage {
+  id               String  @id @default(uuid())
+  parentComponentId String?
+  parent           BloodComponent? @relation("parent", fields: [parentComponentId], references: [id])
+  childComponentId String?
+  child            BloodComponent? @relation("child", fields: [childComponentId], references: [id])
+  relationType     String // DERIVED_FROM | POOLED_INTO | SPLIT_FROM
+  note             String?
+  createdAt        DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Immutable lifecycle event log
+// ---------------------------------------------------------------------------
+
+model LifecycleEvent {
+  id                   String    @id @default(uuid())
+  donationId           String?
+  donation             Donation? @relation(fields: [donationId], references: [id])
+  componentId          String?
+  component            BloodComponent? @relation(fields: [componentId], references: [id])
+  eventType            String
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id])
+  facilityId           String?
+  occurredAt           DateTime
+  receivedAt           DateTime  @default(now())
+  sourceSystem         String
+  sourceEventId        String
+  verificationStatus   String    @default("VERIFIED") // VERIFIED | PENDING | REJECTED
+  payloadJson          String? // sanitized metadata allowed for this event type
+  previousEventId      String?
+  correctionForEventId String?
+  supersededByCorrection Boolean @default(false)
+  integrationId        String?
+  ingestedByUserId     String? // staff manual entry / simulator attribution
+  createdAt            DateTime  @default(now())
+
+  disclosureDecisions DisclosureDecision[]
+  recipientContexts   RecipientContext[]
+
+  @@unique([sourceSystem, sourceEventId])
+  @@index([componentId, occurredAt])
+  @@index([donationId, occurredAt])
+}
+
+// ---------------------------------------------------------------------------
+// Recipient privacy model — opaque by construction
+// ---------------------------------------------------------------------------
+
+model RecipientContext {
+  id                String   @id @default(uuid())
+  recipientRef      String   @unique // random opaque identifier generated by hospital side
+  componentId       String
+  component         BloodComponent @relation(fields: [componentId], references: [id])
+  eventId           String?
+  event             LifecycleEvent? @relation(fields: [eventId], references: [id])
+  facilityOrgId     String
+  organization      Organization @relation(fields: [facilityOrgId], references: [id])
+  ageBand           String? // <18 | 18-40 | 40-60 | 60+ — coarse only
+  treatmentCategory String? // whitelisted broad category code
+  createdAt         DateTime @default(now())
+}
+
+model DisclosureConsent {
+  id            String   @id @default(uuid())
+  recipientRef  String
+  level         String // NONE | BROAD_PURPOSE | LIMITED_ANON
+  category      String? // required when level != NONE
+  policyVersion String   @default("1.0")
+  verifiedByOrgId String
+  verifiedAt    DateTime @default(now())
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model DisclosureDecision {
+  id               String   @id @default(uuid())
+  eventId          String
+  event            LifecycleEvent @relation(fields: [eventId], references: [id])
+  requestedLevel   String
+  grantedLevel     String // NONE | BROAD_PURPOSE | LIMITED_ANON
+  messageKey       String // i18n template key rendered to donor
+  paramsJson       String? // sanitized template params only
+  degradedReason   String? // e.g. COHORT_TOO_SMALL, CATEGORY_UNKNOWN, CONSENT_EXPIRED
+  provenanceJson   String // chain: decision -> event -> org -> source ids
+  cohortSize       Int?
+  createdAt        DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Notifications & preferences
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  typeKey     String // e.g. notify.component.prepared
+  titleParamsJson String?
+  bodyParamsJson  String?
+  genericTitle Boolean  @default(true) // lock-screen-safe generic title flag
+  privacySafeBody Boolean @default(true)
+  readAt      DateTime?
+  channels    String    @default("IN_APP") // comma list actually dispatched
+  relatedDonationId String?
+  relatedComponentId String?
+  createdAt   DateTime  @default(now())
+}
+
+model OutboxEmail {
+  id        String   @id @default(uuid())
+  toEmail   String
+  subject   String
+  bodyText  String
+  status    String   @default("QUEUED") // QUEUED | SENT(dev=logged) | FAILED
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model NotificationPreference {
+  id                      String @id @default(uuid())
+  userId                  String @unique
+  user                    User   @relation(fields: [userId], references: [id])
+  inApp                   Boolean @default(true)
+  email                   Boolean @default(true)
+  sms                     Boolean @default(false) // future channel adapters
+  whatsapp                Boolean @default(false)
+  push                    Boolean @default(false)
+  descriptiveContent      Boolean @default(false) // opt-in to more descriptive bodies
+  locale                  String  @default("en")
+}
+
+// Consent records are versioned and append-oriented (revocation sets revokedAt).
+model ConsentRecord {
+  id            String    @id @default(uuid())
+  subjectType   String // DONOR_PLATFORM | RECIPIENT_CONTEXT
+  subjectRef    String // userId or recipientRef
+  purposeKey    String // notifications.email, notifications.descriptive, data.export ...
+  granted       Boolean
+  policyVersion String    @default("1.0")
+  textDigest    String? // sha256 of exact consent text shown
+  grantedAt     DateTime  @default(now())
+  revokedAt     DateTime?
+}
+
+// ---------------------------------------------------------------------------
+// Integrations
+// ---------------------------------------------------------------------------
+
+model Integration {
+  id          String   @id @default(uuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id])
+  name        String
+  adapterType String // MOCK_BLOOD_BANK | MOCK_HOSPITAL | WEBHOOK | CSV_IMPORT | FHIR | ERAKTKOSH
+  status      String   @default("ACTIVE") // ACTIVE | DISABLED
+  description String?
+  createdAt   DateTime @default(now())
+
+  credentials IntegrationCredential[]
+  events      IntegrationEvent[]
+}
+
+model IntegrationCredential {
+  id            String    @id @default(uuid())
+  integrationId String
+  integration   Integration @relation(fields: [integrationId], references: [id])
+  keyId         String    @unique // public id, sent as X-RaktSetu-Key
+  secretEncrypted String // AES-256-GCM(APP_SECRET); server-side HMAC verification needs raw secret
+  scopes        String    @default("events:write") // space-separated
+  status        String    @default("ACTIVE") // ACTIVE | REVOKED
+  lastUsedAt    DateTime?
+  rotatedAt     DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model IntegrationEvent {
+  id              String   @id @default(uuid())
+  integrationId   String
+  integration     Integration @relation(fields: [integrationId], references: [id])
+  direction       String   @default("INBOUND")
+  bodySha256      String
+  disposition     String // ACCEPTED | DUPLICATE | INVALID | UNAUTHORIZED | ERROR
+  errorDetail     String?
+  lifecycleEventId String?
+  receivedAt      DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Audit log — append-only
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorType    String // USER | INTEGRATION | SYSTEM
+  actorId      String?
+  action       String // e.g. event.ingested, donation.linked, consent.recorded
+  resourceType String
+  resourceId   String?
+  orgId        String?
+  ipHash       String?
+  metadataJson String? // sanitized only — no PII/PHI beyond ids
+  createdAt    DateTime @default(now())
+
+  @@index([resourceType, resourceId])
+  @@index([orgId, createdAt])
+}

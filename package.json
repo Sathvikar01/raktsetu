@@ -1,0 +1,46 @@
+{
+  "name": "raktsetu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RaktSetu - open-source, privacy-preserving transparency layer between blood banks/hospitals and blood donors",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push --skip-generate",
+    "db:use:sqlite": "node scripts/db-switch.mjs sqlite && prisma generate && prisma db push --skip-generate",
+    "db:use:postgres": "node scripts/db-switch.mjs postgres && prisma generate && prisma db push --skip-generate",
+    "seed": "tsx scripts/seed.ts",
+    "simulate": "tsx scripts/simulate.ts"
+  },
+  "prisma": {
+    "schema": "src/packages/database/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "lucide-react": "0.454.0",
+    "next": "^15.5.23",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "prisma": "5.22.0",
+    "tailwindcss": "3.4.15",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "vitest": "2.1.8"
+  }
+}
