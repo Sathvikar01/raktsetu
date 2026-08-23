@@ -1,0 +1,175 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { getDictionary } from "@/i18n";
+import { can, requireRole } from "@/lib/rbac";
+import { prisma } from "@/packages/database/client";
+import { recordAudit } from "@/lib/audit";
+import { logout } from "@/lib/services/account";
+import {
+  createIntegrationWithCredential,
+  ProvisioningNotFoundError,
+  revokeCredential,
+  rotateCredential,
+} from "@/lib/services/provisioning";
+import type { AdminActionState } from "./types";
+import { ADAPTER_TYPES } from "./types";
+import { adminFailure, canManageIntegrations, gateAdminMembership, str } from "./shared";
+
+/**
+ * Admin portal server actions. Deny-by-default: every action runs
+ * requireRole(...) + ACTIVE-membership org gate + permission check.
+ */
+
+async function integrationGate(orgId: string): Promise<true> {
+  const user = await requireRole("ORG_ADMIN", "PLATFORM_ADMIN");
+  if (!(await gateAdminMembership(orgId))) throw new ProvisioningNotFoundError();
+  if (!canManageIntegrations(user)) throw new ProvisioningNotFoundError();
+  return true;
+}
+
+/** Verify the credential belongs to an integration of the given org (no cross-tenant leakage). */
+async function assertCredentialInOrg(orgId: string, credentialId: string): Promise<void> {
+  const credential = await prisma.integrationCredential.findUnique({
+    where: { id: credentialId },
+    select: { integration: { select: { orgId: true } } },
+  });
+  if (!credential || credential.integration.orgId !== orgId) throw new ProvisioningNotFoundError();
+}
+
+export async function createIntegrationAction(
+  _prev: AdminActionState | null,
+  formData: FormData
+): Promise<AdminActionState> {
+  const organizationId = str(formData, "organizationId");
+  try {
+    await integrationGate(organizationId);
+  } catch (err) {
+    return adminFailure(err);
+  }
+  try {
+    const input = z
+      .object({
+        name: z.string().trim().min(1).max(80),
+        adapterType: z.enum(ADAPTER_TYPES),
+        description: z.string().trim().max(200),
+      })
+      .safeParse({
+        name: formData.get("name"),
+        adapterType: formData.get("adapterType"),
+        description: formData.get("description") ?? "",
+      });
+    if (!input.success) {
+      return { ok: false, message: getDictionary().admin.errValidation };
+    }
+    const result = await createIntegrationWithCredential(
+      organizationId,
+      input.data.name,
+      input.data.adapterType,
+      input.data.description || null
+    );
+    revalidatePath("/admin");
+    return {
+      ok: true,
+      message: getDictionary().admin.integrationCreatedTitle,
+      secretOnce: {
+        keyId: result.credential.keyId,
+        secret: result.credential.secret,
+      },
+    };
+  } catch (err) {
+    return adminFailure(err);
+  }
+}
+
+export async function rotateIntegrationCredentialAction(
+  organizationId: string,
+  credentialId: string
+): Promise<AdminActionState> {
+  const d = getDictionary();
+  try {
+    await integrationGate(organizationId);
+  } catch (err) {
+    return adminFailure(err);
+  }
+  try {
+    if (!z.string().uuid().safeParse(credentialId).success) throw new ProvisioningNotFoundError();
+    await assertCredentialInOrg(organizationId, credentialId);
+    const rotated = await rotateCredential(credentialId);
+    revalidatePath("/admin");
+    return {
+      ok: true,
+      message: d.admin.rotateDoneTitle,
+      secretOnce: {
+        keyId: rotated.keyId,
+        secret: rotated.secret,
+        previousKeyId: rotated.previousKeyId,
+      },
+    };
+  } catch (err) {
+    return adminFailure(err);
+  }
+}
+
+export async function revokeIntegrationCredentialAction(
+  organizationId: string,
+  credentialId: string
+): Promise<AdminActionState> {
+  const d = getDictionary();
+  try {
+    await integrationGate(organizationId);
+  } catch (err) {
+    return adminFailure(err);
+  }
+  try {
+    if (!z.string().uuid().safeParse(credentialId).success) throw new ProvisioningNotFoundError();
+    await assertCredentialInOrg(organizationId, credentialId);
+    await revokeCredential(credentialId, "revoked via admin console");
+    revalidatePath("/admin");
+    return { ok: true, message: d.admin.revokeDone };
+  } catch (err) {
+    return adminFailure(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Platform administration (PLATFORM_ADMIN only)
+// ---------------------------------------------------------------------------
+
+export async function setOrgStatusAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN"); // redirects others to /forbidden
+  if (!can(user.role, "org:manage")) redirect("/forbidden");
+
+  const orgId = str(formData, "orgId");
+  const target = str(formData, "target");
+  const parsedTarget = z.enum(["ACTIVE", "SUSPENDED"]).safeParse(target);
+  const parsedOrgId = z.string().uuid().safeParse(orgId);
+  if (!parsedTarget.success || !parsedOrgId.success) redirect("/admin/platform");
+
+  const org = await prisma.organization.findUnique({
+    where: { id: parsedOrgId.data },
+    select: { id: true, status: true },
+  });
+  if (!org || org.status === parsedTarget.data) redirect("/admin/platform");
+
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { status: parsedTarget.data },
+  });
+  await recordAudit({
+    actorType: "USER",
+    actorId: user.id,
+    action: "platform.organization.status_changed",
+    resourceType: "Organization",
+    resourceId: org.id,
+    metadata: { from: org.status, to: parsedTarget.data },
+  });
+  revalidatePath("/admin/platform");
+}
+
+export async function signOutAdminAction(): Promise<void> {
+  await logout();
+  redirect("/");
+}
