@@ -28,6 +28,7 @@ let createComponents: (typeof import("@/lib/services/bloodbank-ops"))["createCom
 let transferComponent: (typeof import("@/lib/services/bloodbank-ops"))["transferComponent"];
 let receiveComponent: (typeof import("@/lib/services/hospital-ops"))["receiveComponent"];
 let transfuseComponent: (typeof import("@/lib/services/hospital-ops"))["transfuseComponent"];
+let IngestAuthzError: (typeof import("@/lib/services/ingest"))["IngestAuthzError"];
 
 interface World {
   bbOrgId: string;
@@ -48,6 +49,8 @@ beforeAll(async () => {
     stdio: "pipe",
   });
   ({ prisma } = await import("@/packages/database/client"));
+  const ingestMod = await import("@/lib/services/ingest");
+  IngestAuthzError = ingestMod.IngestAuthzError;
   const provisioning = await import("@/lib/services/provisioning");
   ({ createIntegrationWithCredential } = provisioning);
   const bbOps = await import("@/lib/services/bloodbank-ops");
@@ -208,5 +211,93 @@ describe("core donation-to-transfusion journey (through services)", () => {
     };
 
     const rbc = await prisma.bloodComponent.findUniqueOrThrow({ where: { id: world.componentIds.RBC } });
-    expect(rbc.currentDerivedState).toBe("PREPARING");
+    expect(rbc.currentDerivedState).toBe("AVAILABLE");
   });
+
+  it("transfers, receives and transfuses RBC with BROAD_PURPOSE disclosure + provenance", async () => {
+    const transfer = await transferComponent({
+      organizationId: world.bbOrgId,
+      componentId: world.componentIds.RBC,
+      destinationFacilityExternalCode: "CGH-MAIN",
+    });
+    expect(transfer.status).toBe("ACCEPTED");
+
+    const received = await receiveComponent({
+      organizationId: world.hospOrgId,
+      componentId: world.componentIds.RBC,
+    });
+    expect(received.status).toBe("ACCEPTED");
+
+    const transfused = await transfuseComponent({
+      organizationId: world.hospOrgId,
+      componentId: world.componentIds.RBC,
+      disclosure: {
+        level: "BROAD_PURPOSE",
+        category: "EMERGENCY_CARE",
+        recipient_ref: "anon-ref-0001",
+        patient_consent_verified: true,
+      },
+    });
+    expect(transfused.status).toBe("ACCEPTED");
+    expect(transfused.disclosureGrantedLevel).toBe("BROAD_PURPOSE");
+    expect(transfused.notificationCreated).toBe(true);
+
+    const rbc = await prisma.bloodComponent.findUniqueOrThrow({
+      where: { id: world.componentIds.RBC },
+    });
+    expect(rbc.currentDerivedState).toBe("TRANSFUSED");
+
+    const decision = await prisma.disclosureDecision.findFirstOrThrow({
+      where: { eventId: transfused.lifecycleEventId },
+    });
+    expect(decision.requestedLevel).toBe("BROAD_PURPOSE");
+    expect(decision.grantedLevel).toBe("BROAD_PURPOSE");
+    expect(decision.degradedReason).toBeNull();
+    const provenance = JSON.parse(decision.provenanceJson);
+    expect(provenance.chain).toEqual([
+      "DisclosureDecision",
+      "LifecycleEvent",
+      "Organization",
+    ]);
+    expect(provenance.eventId).toBe(transfused.lifecycleEventId);
+    expect(typeof provenance.organizationId).toBe("string");
+    expect(provenance.organizationName).toEqual(expect.any(String));
+    expect(typeof provenance.sourceSystem).toBe("string");
+    expect(typeof provenance.sourceEventId).toBe("string");
+
+    const notification = await prisma.notification.findFirst({
+      where: { userId: world.donorUserId, relatedComponentId: world.componentIds.RBC },
+    });
+    expect(notification).not.toBeNull();
+    expect(notification!.genericTitle).toBe(true);
+
+    const audits = await prisma.auditLog.findMany({ where: { action: "event.ingested" } });
+    expect(audits.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("rejects a hospital acting on a component owned by an unrelated blood bank", async () => {
+    const otherOrg = await prisma.organization.create({
+      data: {
+        name: "Unrelated Blood Centre",
+        kind: "BLOOD_BANK",
+        status: "ACTIVE",
+        facilities: { create: { name: "Lab", code: "LAB-99", kind: "PROCESSING_LAB" } },
+      },
+    });
+    const donation = await recordDonation({
+      organizationId: otherOrg.id,
+      externalDonationId: "UB-2001",
+      donatedAt: new Date(),
+    });
+    await completeProcessing({ organizationId: otherOrg.id, donationId: donation.donationId });
+    const created = await createComponents({
+      organizationId: otherOrg.id,
+      donationId: donation.donationId,
+      components: [{ componentType: "RBC", externalComponentId: "UB-2001-RBC" }],
+    });
+
+    await expect(
+      receiveComponent({ organizationId: world.hospOrgId, componentId: created.componentIds[0]! })
+    ).rejects.toThrow(IngestAuthzError);
+  });
+});

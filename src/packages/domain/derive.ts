@@ -110,7 +110,7 @@ function applyComponentEvent(current: ComponentState | null, t: EventType): Comp
     case "COMPONENT_ISSUED": return current === "RECEIVED" || current === "ISSUED" ? "ISSUED" : undefined;
     case "COMPONENT_RETURNED": return current === "TRANSFERRED" || current === "RECEIVED" || current === "ISSUED" ? "RECEIVED" : undefined;
     case "COMPONENT_TRANSFUSED":
-      return ["RECEIVED", "ISSUED", "RESERVED"].includes(current ?? "") ? "TRANSFUSED" : undefined;
+      return ["AVAILABLE", "RESERVED", "RECEIVED", "ISSUED"].includes(current ?? "") ? "TRANSFUSED" : undefined;
     case "COMPONENT_EXPIRED": return current && current !== "EXPIRED" ? "EXPIRED" : undefined;
     case "COMPONENT_DISCARDED": return current && current !== "DISCARDED" ? "DISCARDED" : undefined;
     case "COMPONENT_RECALLED": return current ? "RECALLED" : undefined;

@@ -273,7 +273,9 @@ export async function createComponents(
     created.push({ id: component.id, externalComponentId });
   }
 
-  // Pass 2: append-only lifecycle events.
+  // Pass 2: append-only lifecycle events. Components leave quarantine
+  // immediately: createComponents is only reachable after SCREENING_COMPLETED,
+  // so CREATED is followed by AVAILABLE (release to inventory).
   for (const c of created) {
     await ingestEvent(
       {
@@ -281,6 +283,17 @@ export async function createComponents(
         component_identifier: c.externalComponentId,
         identifier_scheme: "FACILITY_BARCODE",
         event_type: "COMPONENT_CREATED",
+        occurred_at: new Date().toISOString(),
+        verification_status: "VERIFIED",
+      },
+      ctx
+    );
+    await ingestEvent(
+      {
+        external_event_id: `available:${c.externalComponentId}`,
+        component_identifier: c.externalComponentId,
+        identifier_scheme: "FACILITY_BARCODE",
+        event_type: "COMPONENT_AVAILABLE",
         occurred_at: new Date().toISOString(),
         verification_status: "VERIFIED",
       },
