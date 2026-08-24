@@ -70,17 +70,40 @@ export function RecordDonationForm({
             </div>
           ) : null}
           {state?.ok && state.linkCode ? (
-            <div className="space-y-3 rounded-xl2 border border-teal-600/20 bg-teal-50 px-4 py-4">
+            <div className="space-y-3 rounded-xl border border-teal-600/20 bg-teal-50 px-4 py-4">
               <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-                {d.staff.linkCodeLabel}
+                {d.staff.linkCodeLabel} — auto-generated
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <code className="rounded-lg bg-white px-3 py-1.5 font-mono text-lg font-bold tracking-wider text-ink ring-1 ring-teal-600/30">
-                  {state.linkCode}
-                </code>
-                <CopyButton value={state.linkCode} label={d.staff.copyCode} copiedLabel={d.staff.copied} />
+              <div className="flex flex-wrap items-start gap-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <code className="rounded-lg bg-white px-3 py-1.5 font-mono text-lg font-bold tracking-wider text-ink ring-1 ring-teal-600/30">
+                      {state.linkCode}
+                    </code>
+                    <CopyButton value={state.linkCode} label={d.staff.copyCode} copiedLabel={d.staff.copied} />
+                  </div>
+                  <p className="text-xs leading-relaxed text-teal-800">{d.staff.linkCodeIssued}</p>
+                  <p className="text-xs text-teal-700">No typing needed — code was created automatically by the server.</p>
+                </div>
+                <div className="ml-auto flex flex-col items-center gap-2 rounded-xl bg-white p-3 ring-1 ring-teal-600/15">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(state.linkCode)}`}
+                    alt={`QR for ${state.linkCode}`}
+                    width={160}
+                    height={160}
+                    className="size-40 rounded-lg"
+                    loading="lazy"
+                  />
+                  <span className="text-[11px] font-medium uppercase tracking-widest text-ink-faint">Scan to copy</span>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="text-xs font-medium text-teal-700 underline-offset-4 hover:underline"
+                  >
+                    Print slip
+                  </button>
+                </div>
               </div>
-              <p className="text-xs leading-relaxed text-teal-800">{d.staff.linkCodeIssued}</p>
             </div>
           ) : null}
 
