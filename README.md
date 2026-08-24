@@ -42,6 +42,14 @@ Every donor-visible claim carries provenance: rendered message → DisclosureDec
 4. Not an AI decision system: disclosure, authorization and traceability are pure deterministic functions.
 5. Not, by itself, legal compliance.
 
+## Why I built it
+
+Created by [**Sathvik**](https://github.com/Sathvikar01) — every time I donated blood, I walked out wondering: *was it actually used? Did it help someone?* I never got an answer. I realized a lot of donors feel the same, and that uncertainty makes it harder to come back.
+
+RaktSetu is my attempt to close that loop — so people can quietly see where their blood was used, not as numbers, but as proof that their donation mattered. It's a simple, privacy-safe trail, verified at each step, without ever revealing who it helped. When donors can see that their gift counted, they feel more connected — and more motivated to donate again.
+
+If you've donated, received blood, or kept one of these systems running — thank you for what you do.
+
 ## Privacy stance
 
 Recipient identity is structurally absent from the data model (PI-1). Transfusion context reaches donors only through three consent levels:
