@@ -5,7 +5,6 @@ import { getDictionary } from "@/i18n";
 import { Alert, Input, Label } from "@/packages/ui";
 import { PasswordField } from "@/packages/ui";
 import { SubmitButton } from "@/components/site/SubmitButton";
-import { env } from "@/lib/env";
 import { partnerLoginAction } from "./actions";
 
 export function generateMetadata(): Metadata {
@@ -129,33 +128,31 @@ export default async function PartnerLoginPage({
             <SubmitButton pendingLabel={t.submitting}>{t.submit}</SubmitButton>
           </form>
 
-          {env.DEMO_MODE ? (
-            <details className="group mt-6 rounded-lg border border-ink/10 bg-canvas px-4 py-3 open:pb-4">
-              <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-ink marker:content-none [&::-webkit-details-marker]:hidden">
-                <KeyRound className="size-4 text-teal-600" aria-hidden />
-                {t.demoTitle}
-                <ArrowRight
-                  aria-hidden
-                  className="ml-auto size-4 text-ink-faint transition-transform group-open:rotate-90"
-                />
-              </summary>
-              <p className="mt-3 text-xs leading-5 text-ink-soft">{t.demoBody}</p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
-                {DEMO_ACCOUNTS.map((account) => (
-                  <li key={account}>
-                    <code className="rounded-md border border-ink/10 bg-white px-2 py-0.5 font-mono text-xs text-ink">
-                      {account}
-                    </code>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-ink-soft">
-                <code className="rounded-md border border-ink/10 bg-white px-2 py-0.5 font-mono text-xs text-ink">
-                  demo-pass-1234
-                </code>
-              </p>
-            </details>
-          ) : null}
+          <details className="group mt-6 rounded-lg border border-ink/10 bg-canvas px-4 py-3 open:pb-4">
+            <summary className="flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-ink marker:content-none [&::-webkit-details-marker]:hidden">
+              <KeyRound className="size-4 text-teal-600" aria-hidden />
+              {t.demoTitle}
+              <ArrowRight
+                aria-hidden
+                className="ml-auto size-4 text-ink-faint transition-transform group-open:rotate-90"
+              />
+            </summary>
+            <p className="mt-3 text-xs leading-5 text-ink-soft">{t.demoBody}</p>
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+              {DEMO_ACCOUNTS.map((account) => (
+                <li key={account}>
+                  <code className="rounded-md border border-ink/10 bg-white px-2 py-0.5 font-mono text-xs text-ink">
+                    {account}
+                  </code>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-ink-soft">
+              <code className="rounded-md border border-ink/10 bg-white px-2 py-0.5 font-mono text-xs text-ink">
+                demo-pass-1234
+              </code>
+            </p>
+          </details>
 
           <div className="mt-8 border-t border-ink/10 pt-5 text-sm">
             <p className="text-ink-soft">

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Droplets, ShieldCheck } from "lucide-react";
 import { getDictionary } from "@/i18n";
 
-export function SiteFooter({ demoMode }: { demoMode: boolean }) {
+export function SiteFooter() {
   const d = getDictionary();
 
   const columns: Array<{ title: string; links: Array<{ href: string; label: string }> }> = [
@@ -35,11 +35,6 @@ export function SiteFooter({ demoMode }: { demoMode: boolean }) {
 
   return (
     <footer className="mt-auto border-t border-ink/10 bg-white">
-      {demoMode ? (
-        <p className="border-b border-ink/10 bg-canvas px-4 py-2 text-center text-xs text-ink-faint">
-          {d.public.demoNotice}
-        </p>
-      ) : null}
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>

@@ -5,7 +5,7 @@ import { buttonClasses } from "@/packages/ui";
 import { Card, CardBody } from "@/packages/ui";
 import { SectionHeading } from "@/packages/ui";
 import { Stepper } from "@/packages/ui";
-import { CommunityStatsTeaser, DemoParticipantsPreview } from "@/components/site/CommunityStatsTeaser";
+import { CommunityStatsTeaser } from "@/components/site/CommunityStatsTeaser";
 
 function flowSteps(): Array<{ label: string }> {
   const d = getDictionary();
@@ -153,15 +153,13 @@ export default function LandingPage() {
             title={d.public.partnersPreviewTitle}
             body={d.public.partnersPreviewBody}
           />
-          <div className="mt-10">
-            <DemoParticipantsPreview />
-          </div>
           <p className="mt-6 text-center">
             <Link
               href="/partners"
-              className="rounded font-medium text-teal-700 underline-offset-4 hover:text-teal-600 hover:underline focus-visible:underline"
+              className={buttonClasses("primary", "sm")}
             >
               {d.public.partnersMeet}
+              <ArrowRight className="size-4" aria-hidden />
             </Link>
           </p>
         </div>

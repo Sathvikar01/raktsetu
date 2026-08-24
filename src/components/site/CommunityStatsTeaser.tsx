@@ -1,6 +1,5 @@
 import { getCommunityStats } from "@/lib/services/stats";
 import { DEFAULT_LOCALE, getDictionary } from "@/i18n";
-import { Badge } from "@/packages/ui";
 import { StatTile } from "@/packages/ui";
 import Link from "next/link";
 
@@ -37,29 +36,4 @@ export async function CommunityStatsTeaser() {
   );
 }
 
-export function DemoParticipantsPreview() {
-  const d = getDictionary();
-  const orgs = [
-    {
-      name: d.public.demoOrgName1,
-      kind: d.nav.staffPortal,
-    },
-    {
-      name: d.public.demoOrgName2,
-      kind: d.nav.hospitalPortal,
-    },
-  ];
-  return (
-    <ul className="grid gap-4 sm:grid-cols-2">
-      {orgs.map((org) => (
-        <li key={org.name} className="rs-card flex items-start justify-between gap-4 px-5 py-4">
-          <div>
-            <p className="font-semibold text-ink">{org.name}</p>
-            <p className="mt-0.5 text-sm text-ink-soft">{org.kind}</p>
-          </div>
-          <Badge tone="outline">{d.public.demoParticipantBadge}</Badge>
-        </li>
-      ))}
-    </ul>
-  );
-}
+

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Droplets } from "lucide-react";
-import { DemoBanner } from "@/components/site/DemoBanner";
 import { getDictionary } from "@/i18n";
 import { requireRole } from "@/lib/rbac";
 import { signOutDonorAction } from "./actions";
@@ -27,7 +26,6 @@ export default async function DashboardLayout({
       >
         {d.common.skipToContent}
       </a>
-      <DemoBanner demoMode={process.env.DEMO_MODE === "true"} />
       <header className="sticky top-0 z-40 border-b border-ink/10 bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link

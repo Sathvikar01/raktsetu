@@ -1,6 +1,4 @@
-import { env } from "@/lib/env";
 import { getDictionary } from "@/i18n";
-import { DemoBanner } from "@/components/site/DemoBanner";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
@@ -14,12 +12,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       >
         {d.common.skipToContent}
       </a>
-      <DemoBanner demoMode={env.DEMO_MODE} />
       <SiteHeader />
       <main id="main-content" className="flex-1">
         {children}
       </main>
-      <SiteFooter demoMode={env.DEMO_MODE} />
+      <SiteFooter />
     </div>
   );
 }

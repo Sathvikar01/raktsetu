@@ -88,9 +88,6 @@ export default async function CommunityImpactPage() {
             {d.public.impactSuppressionNote}
           </span>
         </Alert>
-        <p className="text-center text-sm text-ink-faint">
-          {d.public.demoNotice}
-        </p>
       </div>
     </div>
   );
