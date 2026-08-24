@@ -11,8 +11,8 @@ const PROTECTED_PREFIXES: Array<{ prefix: string; cookie: string; login: string 
   { prefix: "/impact", cookie: "rs_session", login: "/login" },
   { prefix: "/notifications", cookie: "rs_session", login: "/login" },
   { prefix: "/settings", cookie: "rs_session", login: "/login" },
-  { prefix: "/staff", cookie: "rs_session", login: "/staff/login" },
-  { prefix: "/admin", cookie: "rs_session", login: "/admin/login" },
+  { prefix: "/staff", cookie: "rs_session", login: "/partner/login" },
+  { prefix: "/admin", cookie: "rs_session", login: "/partner/login" },
 ];
 
 export function middleware(req: NextRequest) {
