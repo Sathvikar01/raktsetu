@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { getDictionary } from "@/i18n";
+import { MakerAscii } from "@/components/site/MakerAscii";
 import { buttonClasses, Card, CardBody, SectionHeading } from "@/packages/ui";
 
 export function generateMetadata(): Metadata {
@@ -68,31 +69,7 @@ export default function AboutPage() {
             {d.public.aboutCreatorTitle}
           </h2>
           <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] items-start">
-            <pre
-              aria-hidden="true"
-              className="overflow-x-auto rounded-lg border border-ink/10 bg-white px-3 py-4 font-mono text-[7.5px] leading-[1.05] tracking-tight text-ink sm:text-[8.5px] shadow-sm"
-            >
-{`        . - - - - - .        
-     .  .  _______  .  .     
-   .   /  /  ___  \\  \\   .   
-  :   |  |  /   \\  |  |   :  
-  :   |  | |  o o | |  |   :  # tuxedo bow tie
-  :   |  | |   ~  | |  |   :  # photo → ascii
-   \\  |  |  \\___/ |  |  /   
-    \\  \\  '-___-'  //  /    
-     '--. \\  bow  // .--'    
-        \\  \\___//  //       
-        /  /  | |  \\  \\      
-       /  /   | |   \\  \\     
-      |  |    | |    |  |     
-      |  |   /___\\   |  |     
-      |  |  //   \\\\  |  |     
-      |  |  \\\\___//  |  |     
-       \\  \\  suit  //  //      
-        '--.  ___  .--'       
-            | | |            
-         RaktSetu | Sathvik  `}
-            </pre>
+            <MakerAscii />
             <p className="max-w-prose text-[15px] leading-7 text-ink-soft">
               {d.public.aboutCreatorBody}
             </p>
