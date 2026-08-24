@@ -67,29 +67,31 @@ export default function AboutPage() {
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-ink">
             {d.public.aboutCreatorTitle}
           </h2>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] items-start">
             <pre
               aria-hidden="true"
-              className="overflow-x-auto rounded-lg bg-ink px-4 py-4 font-mono text-[9px] leading-[1.1] tracking-tight text-teal-100 sm:text-[10px]"
+              className="overflow-x-auto rounded-lg border border-ink/10 bg-white px-3 py-4 font-mono text-[7.5px] leading-[1.05] tracking-tight text-ink sm:text-[8.5px] shadow-sm"
             >
-{`              .::::::.
-           .::::::::::::.
-          ::::::::::::::::
-         ::::::::::::::::::
-        ::   _  _     _   ::
-       ::  ( \/ )   (  )  ::
-       ::   \\  \\___//  /  ::
-       ::    \\__  _  __/   ::
-        ::     | / \\ |     ::
-         ::    | \\_/ |    ::
-          ::   |  bow  |  ::
-           ::  | /\\_/\\ | ::      tuxedo maker
-            :: |_//  \\\\ |::
-             \\/  suit  \\/
-              |  RaktSetu  |
-              |  Sathvik   |
-               \\__    __//
-                  |__|`}
+{`        . - - - - - .        
+     .  .  _______  .  .     
+   .   /  /  ___  \\  \\   .   
+  :   |  |  /   \\  |  |   :  
+  :   |  | |  o o | |  |   :  # tuxedo bow tie
+  :   |  | |   ~  | |  |   :  # photo → ascii
+   \\  |  |  \\___/ |  |  /   
+    \\  \\  '-___-'  //  /    
+     '--. \\  bow  // .--'    
+        \\  \\___//  //       
+        /  /  | |  \\  \\      
+       /  /   | |   \\  \\     
+      |  |    | |    |  |     
+      |  |   /___\\   |  |     
+      |  |  //   \\\\  |  |     
+      |  |  \\\\___//  |  |     
+       \\  \\  suit  //  //      
+        '--.  ___  .--'       
+            | | |            
+         RaktSetu | Sathvik  `}
             </pre>
             <p className="max-w-prose text-[15px] leading-7 text-ink-soft">
               {d.public.aboutCreatorBody}
