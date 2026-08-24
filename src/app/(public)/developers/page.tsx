@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, KeyRound, PlugZap, Workflow } from "lucide-react";
+import { ArrowRight, BarChart3, KeyRound, PlugZap, Workflow } from "lucide-react";
 import { EVENT_TYPES } from "@/packages/schemas/events";
 import { getDictionary } from "@/i18n";
 import { Alert, buttonClasses, SectionHeading, TBody, TD, TH, THead, TR, Table } from "@/packages/ui";
@@ -37,6 +37,8 @@ curl -X POST "$RAKTSETU_HOST/api/v1/events" \\
   -H "X-RaktSetu-Timestamp: $TIMESTAMP" \\
   -H "X-RaktSetu-Signature: $SIGNATURE" \\
   -d "$BODY"`;
+
+const STATS_CURL = `curl https://<host>/api/v1/stats`;
 
 const ADAPTER_EXCERPT = `// src/packages/integrations — BloodSystemAdapter
 export interface NormalizedEvent {
@@ -119,6 +121,24 @@ export default function DevelopersPage() {
         <div className="mt-4">
           <CodeBlock>{CURL_SAMPLE}</CodeBlock>
         </div>
+      </section>
+
+      <section aria-labelledby="public-stats-heading" className="mt-10">
+        <h2 id="public-stats-heading" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink">
+          <BarChart3 className="size-5 text-teal-600" aria-hidden />
+          Public stats API
+        </h2>
+        <p className="mt-3 max-w-prose leading-relaxed text-ink-soft">
+          Public, aggregate-only community impact. No authentication required. Rate limited to 60
+          requests per minute per IP. Cached at the edge (s-maxage 300).
+        </p>
+        <div className="mt-4">
+          <CodeBlock>{STATS_CURL}</CodeBlock>
+        </div>
+        <p className="mt-3 max-w-prose text-sm leading-relaxed text-ink-soft">
+          Returns <code className="rounded bg-canvas px-1 py-0.5 text-[13px]">{"{ ok: true, data: CommunityStats, meta: { generatedAt, privacyNote } }"}</code> with Cache-Control{" "}
+          <code className="rounded bg-canvas px-1 py-0.5 text-[13px]">public, s-maxage=300, stale-while-revalidate=60</code>.
+        </p>
       </section>
 
       {/* Event catalog */}
