@@ -1,4 +1,4 @@
-﻿export function MakerAscii() {
+export function MakerAscii() {
   return (
     <div
       aria-hidden="true"
