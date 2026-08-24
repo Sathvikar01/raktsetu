@@ -59,6 +59,37 @@ export default function AboutPage() {
         </Card>
       </div>
 
+      <Card className="mt-10 overflow-hidden">
+        <CardBody className="p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-teal-600">
+            {d.public.aboutCreatorKicker}
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-ink">
+            {d.public.aboutCreatorTitle}
+          </h2>
+          <p className="mt-4 max-w-prose text-[15px] leading-7 text-ink-soft">
+            {d.public.aboutCreatorBody}
+          </p>
+          <p className="mt-4 text-sm font-medium text-ink">{d.public.aboutCreatorNote}</p>
+          <p className="mt-6 flex flex-wrap gap-3 text-sm">
+            <a
+              href="https://github.com/Sathvikar01/raktsetu"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium text-teal-700 underline-offset-4 hover:underline"
+            >
+              GitHub — Sathvikar01/raktsetu →
+            </a>
+            <Link
+              href="/open-source"
+              className="inline-flex items-center gap-1.5 font-medium text-ink-soft underline-offset-4 hover:text-ink hover:underline"
+            >
+              Contribute
+            </Link>
+          </p>
+        </CardBody>
+      </Card>
+
       <div className="mt-12 flex flex-col justify-center gap-3 sm:flex-row">
         <Link href="/open-source" className={buttonClasses("primary", "md")}>
           {d.public.contributionCtaOpenSource}

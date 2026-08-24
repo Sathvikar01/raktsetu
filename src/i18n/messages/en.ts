@@ -125,6 +125,11 @@ const en = {
       "Not a social network — no profiles to compare, no leaderboards, no shaming.",
       "Not an advertising surface — health information is never monetized.",
     ],
+    aboutCreatorKicker: "From the maker",
+    aboutCreatorTitle: "Why I built RaktSetu",
+    aboutCreatorBody:
+      "Every time I donated blood, I walked out wondering — was it actually used? Did it help someone? I never got an answer. I realized a lot of donors feel the same, and that uncertainty makes it harder to come back. I built RaktSetu so people can quietly see where their blood was used — not as numbers, but as proof that their donation mattered. It's a simple, privacy-safe trail, verified at each step, without ever revealing who it helped. When donors can see that their gift counted, they feel more connected — and more motivated to donate again. That's the whole idea.",
+    aboutCreatorNote: "If you've donated, received blood, or kept these systems running — thank you for what you do. — Sathvik",
     hiwTitle: "How it works",
     hiwKicker: "From your vein to someone's rescue",
     hiwIntro:
