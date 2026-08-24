@@ -27,6 +27,14 @@ export default function PartnersPage() {
         title={d.public.ptTitle}
         body={d.public.ptIntro}
       />
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link href="/partner/login" className={buttonClasses("primary", "md")}>
+          {d.public.ptCtaLogin}
+        </Link>
+        <Link href="/partner/request" className={buttonClasses("secondary", "md")}>
+          {d.public.ptCtaRequest}
+        </Link>
+      </div>
 
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {audiences.map((a) => (
@@ -64,9 +72,14 @@ export default function PartnersPage() {
             <h2 className="font-semibold tracking-tight text-ink">{d.public.ptContactTitle}</h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-soft">{d.public.ptContactBody}</p>
           </div>
-          <Link href="/developers" className={buttonClasses("primary", "md")}>
-            {d.public.ptDevCta}
-          </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link href="/partner/request" className={buttonClasses("primary", "md")}>
+              {d.public.ptCtaRequest}
+            </Link>
+            <Link href="/developers" className={buttonClasses("secondary", "md")}>
+              {d.public.ptDevCta}
+            </Link>
+          </div>
         </CardBody>
       </Card>
     </div>

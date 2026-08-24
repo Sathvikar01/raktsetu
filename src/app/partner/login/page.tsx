@@ -170,11 +170,18 @@ export default async function PartnerLoginPage({
             <p className="mt-2 text-ink-soft">
               {t.needAccess}{" "}
               <Link
-                href="/partners"
+                href="/partner/request"
                 className="rounded font-medium text-teal-700 underline-offset-4 hover:text-teal-600 hover:underline focus-visible:underline"
               >
                 {t.requestAccess}
                 <ArrowRight aria-hidden className="ml-1 inline size-3.5 -translate-y-px" />
+              </Link>
+              <span className="mx-1.5 text-ink-faint">·</span>
+              <Link
+                href="/partners"
+                className="rounded font-medium text-teal-700 underline-offset-4 hover:text-teal-600 hover:underline focus-visible:underline"
+              >
+                {t.aboutProgramme}
               </Link>
             </p>
           </div>

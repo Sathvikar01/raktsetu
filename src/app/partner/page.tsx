@@ -26,6 +26,9 @@ export default function PartnerPage() {
           <Link href="/partner/login" className={buttonClasses("primary", "md")}>
             Partner login
           </Link>
+          <Link href="/partner/request" className={buttonClasses("secondary", "md")}>
+            Request partner access
+          </Link>
           <Link href="/about" className={buttonClasses("secondary", "md")}>
             How privacy works
           </Link>
@@ -77,13 +80,21 @@ export default function PartnerPage() {
                 Use your existing staff credentials. Donor accounts cannot open this portal.
               </p>
             </div>
-            <Link href="/partner/login" className={buttonClasses("primary", "md") + " shrink-0"}>
-              Go to partner login →
-            </Link>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link href="/partner/login" className={buttonClasses("primary", "md")}>
+                Go to partner login →
+              </Link>
+              <Link href="/partner/request" className={buttonClasses("secondary", "md")}>
+                Request access →
+              </Link>
+            </div>
           </CardBody>
         </Card>
         <p className="mt-4 text-center text-xs text-ink-faint">
-          This is a separate entry from the donor site — same theme, same privacy engine, isolated navigation.
+          This is a separate entry from the donor site — same theme, same privacy engine, isolated navigation.{" "}
+          <Link href="/partners" className="font-medium text-ink-soft underline-offset-4 hover:text-ink hover:underline">
+            About partner programme
+          </Link>
         </p>
       </div>
     </div>
