@@ -67,9 +67,34 @@ export default function AboutPage() {
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-ink">
             {d.public.aboutCreatorTitle}
           </h2>
-          <p className="mt-4 max-w-prose text-[15px] leading-7 text-ink-soft">
-            {d.public.aboutCreatorBody}
-          </p>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr]">
+            <pre
+              aria-hidden="true"
+              className="overflow-x-auto rounded-lg bg-ink px-4 py-4 font-mono text-[9px] leading-[1.1] tracking-tight text-teal-100 sm:text-[10px]"
+            >
+{`              .::::::.
+           .::::::::::::.
+          ::::::::::::::::
+         ::::::::::::::::::
+        ::   _  _     _   ::
+       ::  ( \/ )   (  )  ::
+       ::   \\  \\___//  /  ::
+       ::    \\__  _  __/   ::
+        ::     | / \\ |     ::
+         ::    | \\_/ |    ::
+          ::   |  bow  |  ::
+           ::  | /\\_/\\ | ::      tuxedo maker
+            :: |_//  \\\\ |::
+             \\/  suit  \\/
+              |  RaktSetu  |
+              |  Sathvik   |
+               \\__    __//
+                  |__|`}
+            </pre>
+            <p className="max-w-prose text-[15px] leading-7 text-ink-soft">
+              {d.public.aboutCreatorBody}
+            </p>
+          </div>
           <p className="mt-4 text-sm font-medium text-ink">{d.public.aboutCreatorNote}</p>
           <p className="mt-6 flex flex-wrap gap-3 text-sm">
             <a
