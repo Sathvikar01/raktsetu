@@ -82,6 +82,9 @@ export interface ProvenanceSummary {
   organizationName: string | null;
   sourceSystem: string | null;
   sourceEventId: string | null;
+  occurredAt: Date | null;
+  receivedAt: Date | null;
+  verificationStatus: string | null;
 }
 
 export interface VerifiedDecisionView {
@@ -106,6 +109,8 @@ interface VerifiedRowLike {
     verificationStatus: string;
     sourceSystem: string;
     sourceEventId: string;
+    occurredAt?: Date | null;
+    receivedAt?: Date | null;
     organization?: { name?: string | null } | null;
   };
 }
@@ -130,6 +135,16 @@ export function buildVerifiedDecisionView(
     fallbackProvenance = {};
   }
 
+  // Coerce fallback dates that may be serialized as ISO strings inside provenanceJson.
+  const coerceFallbackDate = (value: unknown): Date | null => {
+    if (value instanceof Date) return value;
+    if (typeof value === "string") {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+
   return {
     decisionId: row.id,
     eventId: row.eventId,
@@ -141,6 +156,10 @@ export function buildVerifiedDecisionView(
       organizationName: row.event.organization?.name ?? fallbackProvenance.organizationName ?? null,
       sourceSystem: row.event.sourceSystem ?? fallbackProvenance.sourceSystem ?? null,
       sourceEventId: row.event.sourceEventId ?? fallbackProvenance.sourceEventId ?? null,
+      occurredAt: row.event.occurredAt ?? coerceFallbackDate(fallbackProvenance.occurredAt) ?? null,
+      receivedAt: row.event.receivedAt ?? coerceFallbackDate(fallbackProvenance.receivedAt) ?? null,
+      verificationStatus:
+        row.event.verificationStatus ?? fallbackProvenance.verificationStatus ?? null,
     },
   };
 }
@@ -278,6 +297,8 @@ export async function getVerifiedDecisionForEvent(
           verificationStatus: true,
           sourceSystem: true,
           sourceEventId: true,
+          occurredAt: true,
+          receivedAt: true,
           organization: { select: { name: true } },
         },
       },

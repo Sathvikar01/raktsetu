@@ -167,6 +167,9 @@ describe("buildVerifiedDecisionView", () => {
       organizationName: "City Hospital",
       sourceSystem: "hmis-live",
       sourceEventId: "SE-LIVE",
+      occurredAt: null,
+      receivedAt: null,
+      verificationStatus: "VERIFIED",
     });
   });
 

@@ -407,6 +407,43 @@ const en = {
     provenanceOrg: "Organization: {value}",
     provenanceSourceSystem: "Source system: {value}",
     provenanceSourceEvent: "Source event: {value}",
+    provenanceLabel: "Provenance:",
+    provenanceWhyTitle: "Why am I seeing this?",
+    provenanceChainIntro: "How this message was created — a verified chain of 4 steps.",
+    provenanceExplainer:
+      "Every donor message is tied to a verified record signed by the reporting organization. Here is the chain for this update.",
+    provenanceStep1Title: "Your donor message",
+    provenanceStep1Body: "This is the message your privacy settings allow for this transfusion.",
+    provenanceStep2Title: "Privacy decision",
+    provenanceStep2Body:
+      "The level of detail is decided by your consent and our privacy policy. The strictest rule always wins.",
+    provenanceLevelWhyNONE:
+      "Only a basic confirmation is shown — additional context was not permitted.",
+    provenanceLevelWhyBROAD_PURPOSE:
+      "A broad purpose was permitted — no age or identifying details.",
+    provenanceLevelWhyLIMITED_ANON:
+      "Limited anonymous context was permitted because consent and cohort checks passed.",
+    provenanceLevelWhyFallback:
+      "The sharing level was determined by consent and privacy checks.",
+    provenanceStep2DegradedLabel: "Why less was shown:",
+    provenanceStep3Title: "Source event",
+    provenanceStep3VerifiedBadge: "Verified",
+    provenanceStep3SourceSystemLabel: "Source system: {value}",
+    provenanceStep3SourceEventLabel: "Source event: {value}",
+    provenanceStep3OccurredAtLabel: "Occurred: {date}",
+    provenanceStep3ReceivedAtLabel: "Recorded: {date}",
+    provenanceStep3DatesNote: "Dates are shown at day granularity to protect privacy.",
+    provenanceStep4Title: "Reporting organization",
+    provenanceStep4VerifiedBy:
+      "Reported and verified by {organizationName}. This organization is responsible for the accuracy of the source record.",
+    provenanceStep4NoOrg: "Reporting organization information is temporarily unavailable.",
+    provenanceStep4Note: "Only the organization’s name is shown — no recipient details are ever stored.",
+    provenancePrivacyLinkLabel: "Learn how privacy is protected",
+    provenanceAwaitingTitle: "Awaiting verification from partner system",
+    provenanceAwaitingBody:
+      "This update is still being verified by the reporting organization. No clinical details are shown until verification is complete.",
+    provenanceAwaitingNote: "Once verified, the full provenance chain will appear here.",
+    provenanceLevelLabel: "Allowed detail: {level}",
     state: {
       PREPARING: "Preparing",
       AVAILABLE: "Available",
