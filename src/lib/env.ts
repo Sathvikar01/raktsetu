@@ -24,6 +24,8 @@ export const env = {
   PRIVACY_MIN_AGGREGATE: Number(process.env.PRIVACY_MIN_AGGREGATE ?? 10),
   SESSION_TTL_DAYS: Number(process.env.SESSION_TTL_DAYS ?? 30),
   EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? "console", // console | resend
+  /** Canonical origin for links/OG tags; no hard-coded deploy hosts anywhere. */
+  APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://localhost:3000",
   get isProd() {
     return this.NODE_ENV === "production";
   },

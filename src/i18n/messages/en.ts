@@ -119,13 +119,13 @@ const en = {
     verifiedReadMore: "See how verification works",
     statsTeaserTitle: "The community, in numbers",
     statsTeaserIntro:
-      "Live, aggregate-only counts from participating organizations. Small cohorts are suppressed to protect privacy.",
+      "Aggregate-only counts from organizations on this deployment. Small cohorts are suppressed to protect privacy.",
     statsViewAll: "Explore community impact",
     statsEmpty:
       "Community numbers appear here as soon as donations are tracked on this deployment.",
-    partnersPreviewTitle: "Built with healthcare organizations",
+    partnersPreviewTitle: "Designed with healthcare organizations",
     partnersPreviewBody:
-      "RaktSetu connects blood banks and hospitals through signed, auditable integrations — not screenshots and spreadsheets.",
+      "RaktSetu is built to connect blood banks and hospitals through signed, auditable integrations — not screenshots and spreadsheets.",
     partnersMeet: "Meet the partner program",
     demoParticipantBadge: "Synthetic demo participant",
     demoOrgName1: "Demo Blood Bank A",
@@ -142,9 +142,9 @@ const en = {
     aboutIsTitle: "What RaktSetu is",
     aboutIsItems: [
       "A privacy-preserving way for donors to follow their own donation's journey.",
-      "A verified, auditable event trail recorded by participating healthcare organizations.",
+      "A verified, auditable event trail, designed to be recorded by participating healthcare organizations.",
       "Free, open-source software that any blood bank or hospital can self-host.",
-      "Built to align with India's DPDP Act and ABDM building blocks.",
+      "Designed to align with India's DPDP Act and ABDM building blocks (alignment is not legal compliance).",
     ],
     aboutNotTitle: "What RaktSetu is NOT",
     aboutNotItems: [
@@ -504,7 +504,7 @@ const en = {
       "The sharing level was determined by consent and privacy checks.",
     provenanceStep2DegradedLabel: "Why less was shown:",
     provenanceStep3Title: "Source event",
-    provenanceStep3VerifiedBadge: "Verified",
+    provenanceStep3VerifiedBadge: "Verified partner event",
     provenanceStep3SourceSystemLabel: "Source system: {value}",
     provenanceStep3SourceEventLabel: "Source event: {value}",
     provenanceStep3OccurredAtLabel: "Occurred: {date}",

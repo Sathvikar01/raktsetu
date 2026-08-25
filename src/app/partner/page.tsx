@@ -65,7 +65,7 @@ export default function PartnerPage() {
             </span>
             <h3 className="mt-4 text-base font-semibold text-ink">3. Donor follows privately</h3>
             <p className="mt-2 text-sm leading-6 text-ink-soft">
-              Donor enters the code once at <span className="font-medium text-ink">raktsetu-lime.vercel.app</span> → sees only their own verified journey. No patient data ever leaves the hospital.
+              Donor enters the code once on this site → sees only their own verified journey. No patient data ever leaves the hospital.
             </p>
           </CardBody>
         </Card>
