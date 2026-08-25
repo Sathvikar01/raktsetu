@@ -6,7 +6,8 @@ import { translate } from "@/i18n";
 
 /**
  * Channel-agnostic notification service.
- * Channels: IN_APP (DB) + EMAIL (outbox table; dev logs). SMS/WhatsApp/push are
+ * Channels: IN_APP (DB) + EMAIL (outbox table, drained by the outbox worker —
+ * console sender in dev, Resend when configured). SMS/WhatsApp/push are
  * documented adapter points — not stubbed as fake code (spec §18).
  * Lock-screen safety: titles stay generic unless donor opted into descriptive
  * content AND the notification is policy-flagged descriptive-safe (PI-11).
@@ -65,8 +66,7 @@ export async function dispatchDonorNotification(input: DonorNotificationInput): 
           toEmail: user.email,
           subject: title,
           bodyText: body,
-          status: process.env.NODE_ENV === "production" ? "QUEUED" : "SENT",
-          sentAt: process.env.NODE_ENV === "production" ? null : new Date(),
+          status: "QUEUED", // drained by the outbox worker (cron or npm run outbox:process)
         },
       });
     }

@@ -23,6 +23,7 @@ export const env = {
   PRIVACY_MIN_COHORT: Number(process.env.PRIVACY_MIN_COHORT ?? 5),
   PRIVACY_MIN_AGGREGATE: Number(process.env.PRIVACY_MIN_AGGREGATE ?? 10),
   SESSION_TTL_DAYS: Number(process.env.SESSION_TTL_DAYS ?? 30),
+  EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? "console", // console | resend
   get isProd() {
     return this.NODE_ENV === "production";
   },
