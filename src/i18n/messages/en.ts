@@ -527,6 +527,12 @@ const en = {
     consentScope: "Scope",
     consentGranted: "Granted",
     consentRevoked: "Revoked",
+    consentHistoryTitle: "Consent history",
+    consentHistoryIntro:
+      "Every consent choice is kept forever — grants and revocations are never overwritten or deleted.",
+    consentHistoryGranted: "Granted: {purpose}",
+    consentHistoryRevoked: "Revoked: {purpose}",
+    consentHistoryVersion: "Policy version {version}",
     consentActiveBadge: "Active",
     consentRevoke: "Revoke",
     consentGrantTitle: "Record a new consent",

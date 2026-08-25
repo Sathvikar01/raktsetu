@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import {
   Badge,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
+  Timeline,
 } from "@/packages/ui";
 import { DEFAULT_LOCALE, getDictionary, translate } from "@/i18n";
 import { requireRole } from "@/lib/rbac";
@@ -61,6 +62,34 @@ export default async function SettingsPage() {
     descriptiveContent: prefs?.descriptiveContent ?? false,
     locale: prefs?.locale ?? DEFAULT_LOCALE,
   };
+
+  interface HistoryEntry {
+    at: Date;
+    granted: boolean;
+    purposeKey: string;
+    policyVersion: string;
+  }
+  const history: HistoryEntry[] = consents
+    .flatMap((record): HistoryEntry[] => {
+      const entries: HistoryEntry[] = [
+        {
+          at: record.grantedAt,
+          granted: true,
+          purposeKey: record.purposeKey,
+          policyVersion: record.policyVersion,
+        },
+      ];
+      if (record.revokedAt) {
+        entries.push({
+          at: record.revokedAt,
+          granted: false,
+          purposeKey: record.purposeKey,
+          policyVersion: record.policyVersion,
+        });
+      }
+      return entries;
+    })
+    .sort((a, b) => b.at.getTime() - a.at.getTime());
 
   return (
     <div className="space-y-6">
@@ -148,6 +177,35 @@ export default async function SettingsPage() {
           </Card>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{d.donor.consentHistoryTitle}</CardTitle>
+          <p className="mt-1 text-sm text-ink-soft">{d.donor.consentHistoryIntro}</p>
+        </CardHeader>
+        <CardBody>
+          {history.length === 0 ? (
+            <p className="text-sm text-ink-faint">{d.donor.consentEmpty}</p>
+          ) : (
+            <Timeline
+              items={history.map((entry) => ({
+                title: translate(DEFAULT_LOCALE, entry.granted ? "donor.consentHistoryGranted" : "donor.consentHistoryRevoked", {
+                  purpose: purposeLabel(entry.purposeKey),
+                }),
+                date: fmtDateTime(entry.at),
+                body: translate(DEFAULT_LOCALE, "donor.consentHistoryVersion", {
+                  version: entry.policyVersion,
+                }),
+                icon: entry.granted ? (
+                  <CheckCircle2 className="size-4" aria-hidden />
+                ) : (
+                  <XCircle className="size-4" aria-hidden />
+                ),
+              }))}
+            />
+          )}
+        </CardBody>
+      </Card>
     </div>
   );
 }
