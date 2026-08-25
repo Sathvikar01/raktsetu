@@ -65,11 +65,21 @@ export default async function PlatformAdminPage() {
               </TD>
               <TD>{org._count.members}</TD>
               <TD>
-                <form action={setOrgStatusAction} className="flex gap-2">
+                <form action={setOrgStatusAction} className="flex items-center gap-2">
                   <input type="hidden" name="orgId" value={org.id} />
                   {org.status === "ACTIVE" ? (
                     <>
                       <input type="hidden" name="target" value="SUSPENDED" />
+                      <input
+                        type="text"
+                        name="reason"
+                        required
+                        minLength={4}
+                        maxLength={200}
+                        placeholder={d.admin.revokeReasonPlaceholder}
+                        aria-label={d.admin.orgReasonLabel}
+                        className="rs-input w-44 text-xs"
+                      />
                       <button
                         type="submit"
                         className="rounded-lg border border-crimson-600/30 bg-white px-3 py-1.5 text-sm font-medium text-crimson-700 transition-colors hover:border-crimson-600/60 hover:bg-crimson-50"
@@ -80,6 +90,16 @@ export default async function PlatformAdminPage() {
                   ) : (
                     <>
                       <input type="hidden" name="target" value="ACTIVE" />
+                      <input
+                        type="text"
+                        name="reason"
+                        required
+                        minLength={4}
+                        maxLength={200}
+                        placeholder={d.admin.revokeReasonPlaceholder}
+                        aria-label={d.admin.orgReasonLabel}
+                        className="rs-input w-44 text-xs"
+                      />
                       <button
                         type="submit"
                         className="rounded-lg border border-teal-600/30 bg-white px-3 py-1.5 text-sm font-medium text-teal-700 transition-colors hover:border-teal-600/60 hover:bg-teal-50"

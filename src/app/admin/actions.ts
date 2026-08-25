@@ -115,7 +115,8 @@ export async function rotateIntegrationCredentialAction(
 
 export async function revokeIntegrationCredentialAction(
   organizationId: string,
-  credentialId: string
+  credentialId: string,
+  reason?: string
 ): Promise<AdminActionState> {
   const d = getDictionary();
   try {
@@ -126,7 +127,9 @@ export async function revokeIntegrationCredentialAction(
   try {
     if (!z.string().uuid().safeParse(credentialId).success) throw new ProvisioningNotFoundError();
     await assertCredentialInOrg(organizationId, credentialId);
-    await revokeCredential(credentialId, "revoked via admin console");
+    const cleanReason = (reason ?? "").trim().slice(0, 200);
+    if (cleanReason.length < 4) return { ok: false, message: d.admin.errReasonRequired };
+    await revokeCredential(credentialId, cleanReason);
     revalidatePath("/admin");
     return { ok: true, message: d.admin.revokeDone };
   } catch (err) {
@@ -144,9 +147,12 @@ export async function setOrgStatusAction(formData: FormData): Promise<void> {
 
   const orgId = str(formData, "orgId");
   const target = str(formData, "target");
+  const reason = str(formData, "reason").trim().slice(0, 200);
   const parsedTarget = z.enum(["ACTIVE", "SUSPENDED"]).safeParse(target);
   const parsedOrgId = z.string().uuid().safeParse(orgId);
-  if (!parsedTarget.success || !parsedOrgId.success) redirect("/admin/platform");
+  if (!parsedTarget.success || !parsedOrgId.success || reason.length < 4) {
+    redirect("/admin/platform?error=reason_required");
+  }
 
   const org = await prisma.organization.findUnique({
     where: { id: parsedOrgId.data },
@@ -164,7 +170,7 @@ export async function setOrgStatusAction(formData: FormData): Promise<void> {
     action: "platform.organization.status_changed",
     resourceType: "Organization",
     resourceId: org.id,
-    metadata: { from: org.status, to: parsedTarget.data },
+    metadata: { from: org.status, to: parsedTarget.data, reason },
   });
   revalidatePath("/admin/platform");
 }

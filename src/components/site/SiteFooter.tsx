@@ -18,7 +18,7 @@ export function SiteFooter() {
     {
       title: d.nav.footerProject,
       links: [
-        { href: "/partners", label: d.nav.partners },
+        { href: "/about", label: d.nav.about },
         { href: "/developers", label: d.nav.developers },
         { href: "/open-source", label: d.nav.openSource },
       ],

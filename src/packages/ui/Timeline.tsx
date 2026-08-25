@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 export interface TimelineItem {
   title: string;
   date?: string;
+  /** Pre-formatted date node (e.g. timezone-aware client component). */
+  dateNode?: ReactNode;
   body?: string;
   icon?: ReactNode;
 }
@@ -27,7 +29,7 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
           )}
           <div className={item.icon ? "pt-0.5" : undefined}>
             <p className="font-semibold text-ink">{item.title}</p>
-            {item.date ? <p className="mt-0.5 text-xs text-ink-faint">{item.date}</p> : null}
+            {item.dateNode ?? (item.date ? <p className="mt-0.5 text-xs text-ink-faint">{item.date}</p> : null)}
             {item.body ? (
               <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-soft">{item.body}</p>
             ) : null}

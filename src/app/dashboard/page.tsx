@@ -15,7 +15,6 @@ import { getDictionary, translate, DEFAULT_LOCALE } from "@/i18n";
 import { deriveDonationProgress } from "@/packages/domain/derive";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/packages/database/client";
-import { fmtDate } from "./format";
 import {
   toComponentState,
   toDerivedEventView,
@@ -23,16 +22,12 @@ import {
   type DerivedEventList,
 } from "./progress";
 import { LinkDonationForm } from "./components/LinkDonationForm";
+import { Greeting } from "./components/Greeting";
+import { LocalTemplate } from "./components/LocalTime";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
   return { title: d.nav.dashboard };
-}
-
-function greetingKey(hour: number): "greetingMorning" | "greetingAfternoon" | "greetingEvening" {
-  if (hour < 12) return "greetingMorning";
-  if (hour < 17) return "greetingAfternoon";
-  return "greetingEvening";
 }
 
 const JOURNEY_KEYS = [
@@ -84,14 +79,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <SectionHeading
-        align="left"
-        headingLevel="h1"
-        title={translate(DEFAULT_LOCALE, `donor.${greetingKey(new Date().getHours())}`, {
-          name: user.displayName,
-        })}
-        body={d.common.tagline}
-      />
+      <div>
+        <Greeting displayName={user.displayName} />
+        <p className="mt-1 text-sm text-ink-soft">{d.common.tagline}</p>
+      </div>
 
       <section aria-labelledby="donations-heading" className="space-y-4">
         <h2 id="donations-heading" className="text-xl font-semibold tracking-tight text-ink">
@@ -129,9 +120,12 @@ export default async function DashboardPage() {
                     <CardBody className="space-y-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-semibold text-ink">
-                          {translate(DEFAULT_LOCALE, "donor.donatedOn", {
-                            date: fmtDate(donation.donatedAt),
-                          })}
+                          <LocalTemplate
+                            template={translate(DEFAULT_LOCALE, "donor.donatedOn", {
+                              date: "{DATE}",
+                            })}
+                            date={donation.donatedAt}
+                          />
                         </p>
                         <Badge tone={progress.patientCareReached ? "teal" : "outline"}>
                           {stageLabel}

@@ -25,9 +25,9 @@ import {
 import { deriveDonationProgress } from "@/packages/domain/derive";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/packages/database/client";
-import { fmtDate } from "../../format";
 import { toComponentState, toDerivedEventView, EVENT_SELECT } from "../../progress";
 import { ImpactBlock } from "./ImpactBlock";
+import { LocalDate, LocalTemplate } from "../../components/LocalTime";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
@@ -56,10 +56,11 @@ interface ComponentCardData {
 function timelineItems(entries: TimelineEntry[]) {
   return entries.map((entry) => ({
     title: translate(DEFAULT_LOCALE, entry.labelKey),
-    date: fmtDate(entry.date),
+    date: undefined,
     body: entry.facilityCityTier
       ? translate(DEFAULT_LOCALE, "donor.eventFacilityCity", { city: entry.facilityCityTier })
       : undefined,
+    dateNode: <LocalDate date={entry.date} />,
   }));
 }
 
@@ -178,9 +179,12 @@ export default async function DonationDetailPage({
             {donation.din ?? d.common.appName}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-soft">
-            <span>
-              {translate(DEFAULT_LOCALE, "donor.donatedOn", { date: fmtDate(donation.donatedAt) })}
-            </span>
+              <span>
+                <LocalTemplate
+                  template={translate(DEFAULT_LOCALE, "donor.donatedOn", { date: "{DATE}" })}
+                  date={donation.donatedAt}
+                />
+              </span>
             {profile?.bloodGroup ? (
               <span>
                 <span className="font-medium text-ink">{d.donor.bloodGroupLabel}</span>{" "}
@@ -232,7 +236,7 @@ export default async function DonationDetailPage({
                     {view.preparedAt ? (
                       <p className="mb-4 text-sm text-ink-soft">
                         <span className="font-medium text-ink">{d.donor.componentCardPrepared}</span>{" "}
-                        {fmtDate(view.preparedAt)}
+                        <LocalDate date={view.preparedAt} />
                       </p>
                     ) : null}
                     {view.awaitingVerification ? (

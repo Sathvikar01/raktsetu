@@ -12,7 +12,7 @@ import { DEFAULT_LOCALE, getDictionary, translate } from "@/i18n";
 import { fromJson } from "@/lib/json";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/packages/database/client";
-import { fmtDateTime } from "../format";
+import { LocalDateTime } from "../components/LocalTime";
 import { markAllNotificationsReadAction } from "../actions";
 
 export function generateMetadata(): Metadata {
@@ -115,7 +115,7 @@ export default async function NotificationsPage() {
                     ) : null}
                   </div>
                   <p className="text-sm leading-relaxed text-ink-soft">{row.body}</p>
-                  <p className="text-xs text-ink-faint">{fmtDateTime(row.createdAt)}</p>
+                  <p className="text-xs text-ink-faint"><LocalDateTime date={row.createdAt} /></p>
                   {row.href ? (
                     <p>
                       <Link

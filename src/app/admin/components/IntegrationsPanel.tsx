@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Alert, Badge, Card, CardBody, CardHeader, Table, TBody, TD, TH, THead, TR } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { revokeIntegrationCredentialAction, rotateIntegrationCredentialAction } from "../actions";
+import { DestructiveAction } from "./DestructiveAction";
 import type { IntegrationView, SecretOnceView } from "../types";
 
 /**
@@ -166,18 +167,23 @@ export function IntegrationsPanel({
                                 >
                                   {d.admin.rotate}
                                 </button>
-                                <button
-                                  type="button"
+                                <DestructiveAction
+                                  label={d.admin.revoke}
+                                  confirmLabel={d.admin.revokeConfirmLabel}
+                                  cancelLabel={d.common.cancel}
+                                  reasonLabel={d.admin.revokeReasonLabel}
+                                  reasonPlaceholder={d.admin.revokeReasonPlaceholder}
+                                  warning={d.admin.revokeWarning}
                                   disabled={pending || cred.status !== "ACTIVE"}
-                                  onClick={() =>
-                                    run(() =>
-                                      revokeIntegrationCredentialAction(organizationId, cred.id)
-                                    )
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-crimson-600/30 bg-white px-3 py-1.5 text-sm font-medium text-crimson-700 transition-colors hover:border-crimson-600/60 hover:bg-crimson-50 disabled:pointer-events-none disabled:opacity-50"
+                                  runAction={(reason) =>
+                                    revokeIntegrationCredentialAction(
+                                      organizationId,
+                                      cred.id,
+                                      reason
+                                    ).then(() => undefined)
                                   }
-                                  className="rounded-lg border border-crimson-600/30 bg-white px-3 py-1.5 text-sm font-medium text-crimson-700 transition-colors hover:border-crimson-600/60 hover:bg-crimson-50 disabled:pointer-events-none disabled:opacity-50"
-                                >
-                                  {d.admin.revoke}
-                                </button>
+                                />
                               </div>
                             </TD>
                           ) : null}
