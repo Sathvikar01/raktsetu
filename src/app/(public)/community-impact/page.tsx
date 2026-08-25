@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BarChart3, ShieldCheck } from "lucide-react";
+import { BarChart3, Microscope, ShieldCheck } from "lucide-react";
 import { getCommunityStats } from "@/lib/services/stats";
 import { DEFAULT_LOCALE, getDictionary } from "@/i18n";
 import {
@@ -89,6 +89,22 @@ export default async function CommunityImpactPage() {
           </span>
         </Alert>
       </div>
+
+      <section aria-labelledby="pilot-heading" className="mt-14">
+        <SectionHeading
+          headingLevel="h2"
+          kicker={d.public.pilotKicker}
+          title={d.public.pilotTitle}
+          body={d.public.pilotIntro}
+        />
+        <div className="mt-8">
+          <EmptyState
+            icon={Microscope}
+            title={d.public.pilotEmptyTitle}
+            body={d.public.pilotEmptyBody}
+          />
+        </div>
+      </section>
     </div>
   );
 }

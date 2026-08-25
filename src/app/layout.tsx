@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { APP_NAME } from "@/lib/env";
+import { APP_NAME, env } from "@/lib/env";
+import { DemoBanner } from "@/components/site/DemoBanner";
 
 export const metadata: Metadata = {
   title: { default: "RaktSetu — follow your blood donation's journey", template: "%s · RaktSetu" },
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {env.DEMO_MODE ? <DemoBanner demoMode /> : null}
+        {children}
+      </body>
     </html>
   );
 }

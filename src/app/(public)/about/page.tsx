@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import { Building2, Check, FlaskConical, X } from "lucide-react";
 import { getDictionary } from "@/i18n";
 import { MakerAscii } from "@/components/site/MakerAscii";
 import { buttonClasses, Card, CardBody, SectionHeading } from "@/packages/ui";
@@ -59,6 +59,43 @@ export default function AboutPage() {
           </CardBody>
         </Card>
       </div>
+
+      <Card className="mt-10">
+        <CardBody>
+          <h2 className="text-lg font-semibold tracking-tight text-ink">{d.public.trustTitle}</h2>
+          <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-ink-soft">
+            {d.public.trustIntro}
+          </p>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-amber-600/20 bg-amber-50/60 p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-800">
+                {d.public.trustDemoTitle}
+              </h3>
+              <ul className="mt-3 space-y-2.5">
+                {d.public.trustDemoItems.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-ink-soft">
+                    <FlaskConical className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-teal-600/20 bg-teal-50/60 p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-teal-800">
+                {d.public.trustProdTitle}
+              </h3>
+              <ul className="mt-3 space-y-2.5">
+                {d.public.trustProdItems.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-ink-soft">
+                    <Building2 className="mt-0.5 size-4 shrink-0 text-teal-700" aria-hidden />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
 
       <Card className="mt-10 overflow-hidden">
         <CardBody className="p-6 sm:p-8">

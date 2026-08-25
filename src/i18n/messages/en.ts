@@ -126,6 +126,23 @@ const en = {
       "Not a social network — no profiles to compare, no leaderboards, no shaming.",
       "Not an advertising surface — health information is never monetized.",
     ],
+    trustTitle: "Prototype today, production tomorrow",
+    trustIntro:
+      "We distinguish clearly between what this deployment demonstrates and what real operations require. Nothing here pretends to be more than it is.",
+    trustDemoTitle: "What you see in this deployment",
+    trustDemoItems: [
+      "Synthetic demo data only — no real patients, donors or facilities.",
+      "Simulated partner integrations (mock adapters) driven by staff forms or signed API calls.",
+      "Email notifications logged or queued locally; no live SMS/WhatsApp delivery yet.",
+      "A working transparency engine — the same privacy rules a production deployment would run.",
+    ],
+    trustProdTitle: "What real operations add",
+    trustProdItems: [
+      "Licensed blood centres and hospitals as verified partners.",
+      "Live signed integrations with their existing systems (e-RaktKosh / HIS / LIS).",
+      "Real notification delivery through consented channels.",
+      "Legal, clinical and security review in the deploying jurisdiction.",
+    ],
     aboutCreatorKicker: "From the maker",
     aboutCreatorTitle: "Why I built RaktSetu",
     aboutCreatorBody:
@@ -172,6 +189,13 @@ const en = {
       "Privacy safeguard: any aggregate backed by fewer than the minimum cohort size is suppressed rather than shown. In production deployments this floor is strict; this demo lowers it so you can see the charts working with synthetic data.",
     impactEmpty:
       "No aggregates have been published yet on this deployment. Numbers appear once seeded or real donations are tracked.",
+    pilotKicker: "Evidence, not promises",
+    pilotTitle: "Real-world pilot evidence",
+    pilotIntro:
+      "This section is reserved for verified evidence from real deployments — aggregate-only outcomes, partner attestations and audit references. It stays clearly separated from demo numbers above.",
+    pilotEmptyTitle: "No pilot evidence published yet",
+    pilotEmptyBody:
+      "RaktSetu has not completed a real-world pilot at the time of writing. When one completes, its aggregate results will be published here — labelled, dated and traceable to the participating organizations.",
     pvTitle: "Privacy, plainly",
     pvKicker: "The model behind the promise",
     pvIntro:
