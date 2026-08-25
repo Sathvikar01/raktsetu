@@ -137,18 +137,27 @@ export default async function SettingsPage() {
                       </div>
                       <dl className="mt-1.5 space-y-0.5 text-xs text-ink-faint">
                         <div className="flex gap-1.5">
-                          <dt className="font-medium">{d.donor.consentScope}:</dt>
-                          <dd className="font-mono">{record.purposeKey}</dd>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <dt className="font-medium">{d.donor.consentVersion}:</dt>
-                          <dd>{record.policyVersion}</dd>
-                        </div>
-                        <div className="flex gap-1.5">
                           <dt className="font-medium">{d.donor.consentGranted}:</dt>
                           <dd>{fmtDateTime(record.grantedAt)}</dd>
                         </div>
                       </dl>
+                      {!record.revokedAt ? (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-xs text-ink-faint marker:content-none hover:text-ink-soft">
+                            {d.donor.consentTechnicalDetails}
+                          </summary>
+                          <dl className="mt-1.5 space-y-0.5 text-xs text-ink-faint">
+                            <div className="flex gap-1.5">
+                              <dt className="font-medium">{d.donor.consentScope}:</dt>
+                              <dd className="font-mono">{record.purposeKey}</dd>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <dt className="font-medium">{d.donor.consentVersion}:</dt>
+                              <dd>{record.policyVersion}</dd>
+                            </div>
+                          </dl>
+                        </details>
+                      ) : null}
                       {!record.revokedAt ? (
                         <form action={revokeConsentAction} className="mt-3">
                           <input type="hidden" name="consentId" value={record.id} />

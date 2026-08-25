@@ -618,6 +618,7 @@ const en = {
     localeEn: "English",
     consentVersion: "Version",
     consentScope: "Scope",
+    consentTechnicalDetails: "Technical reference",
     consentGranted: "Granted",
     consentRevoked: "Revoked",
     consentHistoryTitle: "Consent history",
