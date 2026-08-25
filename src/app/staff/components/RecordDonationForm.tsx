@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { recordDonationAction } from "../actions";
@@ -86,14 +87,7 @@ export function RecordDonationForm({
                   <p className="text-xs text-teal-700">No typing needed — code was created automatically by the server.</p>
                 </div>
                 <div className="ml-auto flex flex-col items-center gap-2 rounded-xl bg-white p-3 ring-1 ring-teal-600/15">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(state.linkCode)}`}
-                    alt={`QR for ${state.linkCode}`}
-                    width={160}
-                    height={160}
-                    className="size-40 rounded-lg"
-                    loading="lazy"
-                  />
+                  <QRCodeSVG value={state.linkCode} size={160} marginSize={1} />
                   <span className="text-[11px] font-medium uppercase tracking-widest text-ink-faint">Scan to copy</span>
                   <button
                     type="button"

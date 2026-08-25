@@ -26,6 +26,7 @@
     "@prisma/client": "5.22.0",
     "lucide-react": "0.454.0",
     "next": "^15.5.23",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "server-only": "^0.0.1",

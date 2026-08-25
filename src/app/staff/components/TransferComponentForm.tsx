@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
+import { Alert, Card, CardBody, CardHeader, Input, Label } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { transferComponentAction } from "../actions";
 import type { ComponentOption, OpsActionState } from "../types";
+import { ScanOrSelect } from "./ScanOrSelect";
 
 export function TransferComponentForm({
   organizationId,
@@ -25,19 +26,13 @@ export function TransferComponentForm({
       <CardBody>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="organizationId" value={organizationId} />
-          <div>
-            <Label htmlFor="tr-component">{d.staff.labelComponent}</Label>
-            <Select id="tr-component" name="componentId" required defaultValue="">
-              <option value="" disabled>
-                {d.staff.optionPickComponent}
-              </option>
-              {components.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <ScanOrSelect
+            id="tr-component"
+            name="componentId"
+            options={components}
+            label={d.staff.labelComponent}
+            pickPlaceholder={d.staff.optionPickComponent}
+          />
           <div>
             <Label htmlFor="tr-destination">{d.staff.labelDestinationCode}</Label>
             <Input

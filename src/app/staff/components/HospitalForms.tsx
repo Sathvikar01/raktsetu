@@ -19,6 +19,7 @@ import {
   hospitalTransfuseComponentAction,
 } from "../actions";
 import type { ComponentOption, OpsActionState, OptionItem } from "../types";
+import { ScanOrSelect } from "./ScanOrSelect";
 
 type HospitalAction =
   | typeof hospitalReceiveComponentAction
@@ -53,19 +54,13 @@ function HospitalSimpleForm({
       <CardBody>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="organizationId" value={organizationId} />
-          <div>
-            <Label htmlFor={`hp-component-${idSuffix}`}>{d.staff.labelComponent}</Label>
-            <Select id={`hp-component-${idSuffix}`} name="componentId" required defaultValue="">
-              <option value="" disabled>
-                {d.staff.optionPickComponent}
-              </option>
-              {components.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <ScanOrSelect
+            id={`hp-component-${idSuffix}`}
+            name="componentId"
+            options={components}
+            label={d.staff.labelComponent}
+            pickPlaceholder={d.staff.optionPickComponent}
+          />
 
           {extraField === "issuedToRef" ? (
             <div>
@@ -197,19 +192,13 @@ export function TransfuseForm({
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="organizationId" value={organizationId} />
 
-          <div>
-            <Label htmlFor="tf-component">{d.staff.labelComponent}</Label>
-            <Select id="tf-component" name="componentId" required defaultValue="">
-              <option value="" disabled>
-                {d.staff.optionPickComponent}
-              </option>
-              {units.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <ScanOrSelect
+            id="tf-component"
+            name="componentId"
+            options={units}
+            label={d.staff.labelComponent}
+            pickPlaceholder={d.staff.optionPickComponent}
+          />
 
           {/* Disclosure sub-form */}
           <fieldset className="space-y-4 rounded-xl2 border border-ink/10 bg-canvas/60 px-4 py-4">
