@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpenCheck, FlaskConical, ShieldCheck, TerminalSquare } from "lucide-react";
 import { getDictionary } from "@/i18n";
+import { env } from "@/lib/env";
 import { Alert, buttonClasses, Card, CardBody, SectionHeading, Timeline } from "@/packages/ui";
+import { RunDemoButton } from "./RunDemoButton";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
@@ -62,34 +64,38 @@ export default function HowItWorksPage() {
         <SectionHeading headingLevel="h2" kicker={d.public.demoKicker} title={d.public.demoTitle} body={d.public.demoIntro} />
         <Card className="mt-10">
           <CardBody className="space-y-5">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
-              <TerminalSquare className="size-5 text-teal-600" aria-hidden />
-              shell
-            </h3>
-            <ol className="space-y-4">
-              {d.public.demoSteps.map((step) => (
-                <li key={step.code}>
-                  <p className="text-sm font-medium text-ink">{step.caption}</p>
-                  <CodeLine code={step.code} />
-                </li>
-              ))}
-              <li>
-                <p className="text-sm font-medium text-ink">{d.public.demoSimulateCaption}</p>
-                <CodeLine code={d.public.demoSimulateCode} />
-              </li>
-            </ol>
-            <Alert type="info" title={undefined}>
-              <span className="flex items-start gap-2">
-                <FlaskConical className="mt-0.5 size-4 shrink-0" aria-hidden />
-                {d.public.demoDemoDocNote}
-              </span>
-            </Alert>
+            <p className="max-w-prose text-sm leading-relaxed text-ink-soft">
+              {d.public.demoOneClickIntro}
+            </p>
+            <RunDemoButton demoMode={env.DEMO_MODE} />
             <Alert type="warn">
               <span className="flex items-start gap-2">
                 <BookOpenCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
                 {d.public.demoDataNote}
               </span>
             </Alert>
+            <details className="group rounded-lg border border-ink/10 bg-canvas px-4 py-3">
+              <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink marker:content-none">
+                <TerminalSquare className="size-4 text-teal-600" aria-hidden />
+                {d.public.demoApiDetailsTitle}
+              </summary>
+              <div className="mt-4 space-y-4">
+                <ol className="space-y-4">
+                  {d.public.demoSteps.map((step) => (
+                    <li key={step.code}>
+                      <p className="text-sm font-medium text-ink">{step.caption}</p>
+                      <CodeLine code={step.code} />
+                    </li>
+                  ))}
+                </ol>
+                <Alert type="info" title={undefined}>
+                  <span className="flex items-start gap-2">
+                    <FlaskConical className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    {d.public.demoDemoDocNote}
+                  </span>
+                </Alert>
+              </div>
+            </details>
           </CardBody>
         </Card>
         <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">

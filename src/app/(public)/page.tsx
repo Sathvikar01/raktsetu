@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Code2, GitBranch, HandHeart, ShieldCheck } from "lucide-react";
 import { getDictionary } from "@/i18n";
 import { buttonClasses } from "@/packages/ui";
-import { Card, CardBody } from "@/packages/ui";
+import { Card, CardBody, CardHeader } from "@/packages/ui";
 import { SectionHeading } from "@/packages/ui";
-import { Stepper } from "@/packages/ui";
+import { Stepper, Timeline } from "@/packages/ui";
 import { CommunityStatsTeaser } from "@/components/site/CommunityStatsTeaser";
 
 function flowSteps(): Array<{ label: string }> {
@@ -66,6 +66,57 @@ export default function LandingPage() {
               </p>
             </CardBody>
           </Card>
+        </div>
+      </section>
+
+      {/* Journey showcase — the product's core loop */}
+      <section aria-labelledby="showcase-heading" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <SectionHeading
+          headingLevel="h2"
+          kicker={d.public.showcaseKicker}
+          title={d.public.showcaseTitle}
+          body={d.public.showcaseIntro}
+        />
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start">
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold text-ink">{d.public.showcaseJourneyLabel}</p>
+            </CardHeader>
+            <CardBody>
+              <Timeline
+                items={d.public.showcaseSteps.map((step) => ({ title: step }))}
+              />
+              <div className="mt-6 rounded-lg border border-teal-600/20 bg-teal-50/60 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                  {d.public.showcaseImpactTitle}
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink">
+                  {d.public.showcaseImpactMessage}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-ink-faint">
+                  {d.public.showcaseImpactProvenance}
+                </p>
+              </div>
+            </CardBody>
+          </Card>
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold tracking-tight text-ink">
+              {d.public.showcaseWhyTitle}
+            </h3>
+            <p className="max-w-prose leading-relaxed text-ink-soft">{d.public.showcaseWhyBody}</p>
+            <ul className="space-y-3">
+              {d.public.showcasePoints.map((point) => (
+                <li key={point} className="flex items-start gap-2.5 text-sm leading-relaxed text-ink-soft">
+                  <BadgeCheck className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
+                  {point}
+                </li>
+              ))}
+            </ul>
+            <Link href="/how-it-works#demo" className={buttonClasses("primary", "md")}>
+              {d.public.showcaseCta}
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </div>
         </div>
       </section>
 

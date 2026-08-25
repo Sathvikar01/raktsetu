@@ -72,6 +72,33 @@ const en = {
     flowComponents: "Components prepared",
     flowPatientCare: "Sent for patient care",
     flowYouKnow: "You get to know",
+    showcaseKicker: "The product is the journey",
+    showcaseTitle: "Follow one donation, step by verified step",
+    showcaseIntro:
+      "This is what a donor actually sees — every stage recorded by the blood bank or hospital, verified, and rendered through strict privacy rules.",
+    showcaseJourneyLabel: "Example journey (synthetic)",
+    showcaseSteps: [
+      "Donation collected",
+      "Processing completed & screening passed",
+      "Red cell component prepared and released",
+      "Transferred to the hospital",
+      "Received at the care facility",
+      "Transfused — impact update unlocked",
+    ],
+    showcaseImpactTitle: "Impact update",
+    showcaseImpactMessage:
+      "Your donation supported emergency care. It was successfully transfused.",
+    showcaseImpactProvenance:
+      "Verified against City General Hospital · source event #4821 · privacy level: broad purpose",
+    showcaseWhyTitle: "Why this matters",
+    showcaseWhyBody:
+      "Most donors never learn whether their donation was used. That silence makes the second donation harder. RaktSetu closes the loop with proof, not promises — while the patient's identity stays structurally impossible to expose.",
+    showcasePoints: [
+      "Every claim chains to a signed, auditable event from a partner organization.",
+      "Privacy decisions are deterministic — no AI, no judgment calls, no data leaks.",
+      "If something isn't verified yet, the app says exactly that instead of guessing.",
+    ],
+    showcaseCta: "Run it live with demo data",
     privacyTitle: "Privacy is the product, not a feature",
     privacyBody:
       "Recipient identity is never stored. Anonymous context appears only with consent, and only when it cannot re-identify anyone.",
@@ -178,7 +205,22 @@ const en = {
     demoSimulateCode: "npm run simulate",
     demoDemoDocNote:
       "A step-by-step walkthrough of the full 18-step demo journey lives in docs/demo-flow.md inside the repository.",
-    demoDataNote: "Everything seeded is synthetic and clearly labelled as demo data.",
+    demoDataNote:
+      "Everything here is synthetic demo data on a demonstration deployment — no real patients, donors or blood units are involved.",
+    demoOneClickIntro:
+      "Run a complete, real journey through the platform in one click — donation recorded, components prepared, transfer to hospital, verified transfusion. It uses the exact same services and privacy rules as production, with synthetic data.",
+    demoRunButton: "Run the demo journey",
+    demoRunning: "Running…",
+    demoDoneTitle: "Journey complete — this is what the blood bank, hospital and donor saw",
+    demoDoneBody:
+      "The steps above were just recorded as verified lifecycle events. You can watch this journey from the donor side right now:",
+    demoLinkCodeLabel: "Link code",
+    demoStepRegister: "Create a free donor account.",
+    demoStepLink: "Paste this link code on your dashboard.",
+    demoStepView: "Open the journey — including the privacy-filtered impact update.",
+    demoDisabledNote:
+      "The interactive demo requires DEMO_MODE. Follow the quickstart in the README to run it locally.",
+    demoApiDetailsTitle: "Prefer the API? See the signed shell commands",
     impactTitle: "Community impact",
     impactKicker: "Aggregates only, always",
     impactIntro:
@@ -250,6 +292,8 @@ const en = {
       intro: "Tell us about your organisation. Verified blood banks, hospitals and NGOs get a dedicated staff portal with audit-logged donation recording and auto-generated donor link codes. No donor data ever leaves your system.",
       formTitle: "Organisation details",
       orgName: "Organisation name",
+      orgNamePlaceholder: "e.g., Seva Blood Centre",
+      city: "City (optional)",
       orgKind: "Organisation type",
       orgKindPlaceholder: "Select type",
       kindBloodBank: "Blood bank",
@@ -265,7 +309,9 @@ const en = {
       submitting: "Sending…",
       successTitle: "Request received — thank you!",
       successBody:
-        "We’ve captured your details. For this open-source deployment, the fastest path is via GitHub Discussions or the contact listed in the README — share your org name and kind and a maintainer will provision your access. In demo mode you can already explore with the seeded partner logins below.",
+        "Your request has been saved and queued for review by the platform team. A maintainer will contact you at the work email provided once your organisation is verified.",
+      errorInvalid: "Please check the highlighted fields — organisation, type, contact person and a valid work email are required.",
+      errorRateLimited: "Too many requests from this connection. Please try again in a few minutes.",
       successCtaLogin: "Go to partner login",
       successCtaPartners: "Back to partners overview",
       alreadyPartner: "Already verified?",
