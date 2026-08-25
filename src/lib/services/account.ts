@@ -5,6 +5,15 @@ import { hashPassword, verifyPassword, passwordIssues } from "@/lib/auth/passwor
 import { createSession, destroySession } from "@/lib/auth/session";
 import { recordAudit } from "@/lib/audit";
 import { rateLimitPersistent } from "@/lib/rate-limit";
+import { issueEmailVerification } from "@/lib/services/email-verification";
+
+export type AuthFailure =
+  | "INVALID"
+  | "RATE_LIMITED"
+  | "EXISTS"
+  | "WEAK_PASSWORD"
+  | "DISABLED"
+  | "EMAIL_UNVERIFIED";
 
 const MAX_AUTH_ATTEMPTS = 10;
 const AUTH_WINDOW_MS = 15 * 60_000;
@@ -15,8 +24,6 @@ export interface RegisterInput {
   displayName: string;
   ipHash?: string | null;
 }
-
-export type AuthFailure = "INVALID" | "RATE_LIMITED" | "EXISTS" | "WEAK_PASSWORD" | "DISABLED";
 
 export async function registerDonor(
   input: RegisterInput
@@ -57,6 +64,12 @@ export async function registerDonor(
       policyVersion: "1.0",
     },
   });
+  // Fire-and-forget verification email (queued via outbox worker).
+  try {
+    await issueEmailVerification(user.id);
+  } catch {
+    // Registration must not fail because mail queueing did.
+  }
   await recordAudit({
     actorType: "USER", actorId: user.id, action: "user.registered",
     resourceType: "User", resourceId: user.id, ipHash: input.ipHash ?? null,
@@ -81,6 +94,12 @@ export async function authenticate(
   if (user.status !== "ACTIVE") return { ok: false, reason: "DISABLED" };
   if (opts?.expectRole && !opts.expectRole.includes(user.role as never)) {
     return { ok: false, reason: "INVALID" };
+  }
+  // Stronger gate for privileged roles: the email channel must be verified
+  // before staff can act on clinical-adjacent records.
+  const PRIVILEGED = new Set(["ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN"]);
+  if (PRIVILEGED.has(user.role) && !user.emailVerifiedAt) {
+    return { ok: false, reason: "EMAIL_UNVERIFIED" };
   }
 
   await createSession(user.id);

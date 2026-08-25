@@ -30,6 +30,7 @@ const REGISTER_ERROR_CODES: Record<AuthFailure, string> = {
   WEAK_PASSWORD: "weak_password",
   INVALID: "invalid_email",
   DISABLED: "disabled",
+  EMAIL_UNVERIFIED: "email_unverified",
 };
 
 export async function loginAction(formData: FormData): Promise<void> {

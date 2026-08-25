@@ -19,6 +19,7 @@ const ERROR_KEYS = {
   invalid: "errInvalid",
   rate_limited: "errRateLimited",
   disabled: "errDisabled",
+  email_unverified: "errEmailUnverified",
 } as const;
 
 const DEMO_ACCOUNTS = [

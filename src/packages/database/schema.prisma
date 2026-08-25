@@ -24,6 +24,7 @@ model User {
   role         String   @default("DONOR") // DONOR | ORG_STAFF | ORG_ADMIN | PLATFORM_ADMIN
   status       String   @default("ACTIVE") // ACTIVE | DISABLED
   mfaEnabled   Boolean  @default(false)
+  emailVerifiedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -33,6 +34,18 @@ model User {
   notifications         Notification[]
   notificationPreference NotificationPreference?
   passwordResetTokens   PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+// Single-use, hashed email verification tokens (24h expiry).
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model DonorProfile {

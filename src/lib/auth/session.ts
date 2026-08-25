@@ -16,10 +16,22 @@ export interface SessionUser {
   donorProfileId: string | null;
 }
 
+const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Staff/admin sessions are short-lived (12h) regardless of the donor TTL —
+ * privileged roles must re-authenticate at least daily.
+ */
 export async function createSession(userId: string): Promise<{ token: string; csrf: string }> {
   const token = randomToken(32);
   const csrf = randomToken(24);
-  const expiresAt = new Date(Date.now() + env.SESSION_TTL_DAYS * 86_400_000);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  const staff = user ? ["ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN"].includes(user.role) : false;
+  const ttlMs = staff ? STAFF_SESSION_TTL_MS : env.SESSION_TTL_DAYS * 86_400_000;
+  const expiresAt = new Date(Date.now() + ttlMs);
   await prisma.session.create({
     data: { userId, tokenHash: hashWithPepper(token), expiresAt },
   });

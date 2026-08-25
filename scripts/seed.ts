@@ -136,6 +136,8 @@ async function main(): Promise<number> {
       displayName: input.displayName,
       role: input.role,
       status: "ACTIVE",
+      // Demo accounts are pre-verified so staff sign-in works out of the box.
+      emailVerifiedAt: new Date(),
     };
     const user = await prisma.user.upsert({
       where: { email: input.email },

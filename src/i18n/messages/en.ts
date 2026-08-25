@@ -388,6 +388,10 @@ const en = {
       newPasswordLabel: "New password",
       passwordPolicyHint: "At least 10 characters, including letters and numbers. Resetting signs you out everywhere.",
       loginResetSuccess: "Password updated. Sign in with your new password.",
+      errEmailUnverified: "Please verify your email address before signing in — check your inbox for the verification link.",
+      verifyTitle: "Email verification",
+      verifySuccess: "Your email address is verified. Thank you!",
+      verifyInvalid: "This verification link is invalid or has expired.",
     },
     partnerLogin: {
       metaTitle: "Partner sign-in — RaktSetu",
@@ -410,6 +414,7 @@ const en = {
       submitting: "Signing in…",
       errInvalid: "Those credentials don't match a hospital / blood-bank staff account.",
       errRateLimited: "Too many attempts — please wait a few minutes and try again.",
+      errEmailUnverified: "Your work email isn't verified yet. Ask a platform admin to re-send the verification link, then verify before signing in.",
       errDisabled: "This account is disabled. Contact your organisation admin.",
       donorHint: "Signing up as a blood donor?",
       donorSignIn: "Use the donor sign-in instead",

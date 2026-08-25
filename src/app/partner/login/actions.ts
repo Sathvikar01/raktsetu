@@ -28,7 +28,9 @@ export async function partnerLoginAction(formData: FormData): Promise<void> {
         ? "rate_limited"
         : result.reason === "DISABLED"
           ? "disabled"
-          : "invalid";
+          : result.reason === "EMAIL_UNVERIFIED"
+            ? "email_unverified"
+            : "invalid";
     redirect(`/partner/login?error=${code}`);
   }
 
