@@ -58,7 +58,9 @@ export async function issueEmailVerification(userId: string): Promise<void> {
 export async function resendEmailVerification(
   userId: string
 ): Promise<{ ok: boolean; message?: string }> {
-  const rl = await rateLimitPersistent(`verify-resend:${userId}`, 3, 15 * 60_000);
+  const rl = await rateLimitPersistent(`verify-resend:${userId}`, 3, 15 * 60_000, {
+    failClosed: true,
+  });
   if (!rl.ok) return { ok: false, message: "RATE_LIMITED" };
   await issueEmailVerification(userId);
   return { ok: true };

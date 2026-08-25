@@ -218,6 +218,8 @@ const en = {
     demoStepRegister: "Create a free donor account.",
     demoStepLink: "Paste this link code on your dashboard.",
     demoStepView: "Open the journey — including the privacy-filtered impact update.",
+    demoRateLimited:
+      "You've run the demo several times recently. Please try again in a little while.",
     demoDisabledNote:
       "The interactive demo requires DEMO_MODE. Follow the quickstart in the README to run it locally.",
     demoApiDetailsTitle: "Prefer the API? See the signed shell commands",
@@ -484,6 +486,8 @@ const en = {
     linkSubmit: "Link donation",
     linkInvalid:
       "That code wasn't recognized. Check the code printed on your donation acknowledgement and try again.",
+    linkRateLimited:
+      "Too many unsuccessful attempts. Please wait a few minutes before trying again.",
     dinLabel: "DIN",
     donatedOn: "Donated on {date}",
     bloodGroupLabel: "Blood group",

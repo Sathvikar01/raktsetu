@@ -4,7 +4,11 @@ import { prisma } from "@/packages/database/client";
 import { hashPassword, verifyPassword, passwordIssues } from "@/lib/auth/passwords";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { recordAudit } from "@/lib/audit";
-import { rateLimitPersistent } from "@/lib/rate-limit";
+import {
+  hashedLimitKey,
+  peekRateLimitPersistent,
+  rateLimitPersistent,
+} from "@/lib/rate-limit";
 import { issueEmailVerification } from "@/lib/services/email-verification";
 
 export type AuthFailure =
@@ -29,7 +33,13 @@ export async function registerDonor(
   input: RegisterInput
 ): Promise<{ ok: true; userId: string } | { ok: false; reason: AuthFailure }> {
   const email = input.email.trim().toLowerCase();
-  const rl = await rateLimitPersistent(`register:${email}`, 5, AUTH_WINDOW_MS);
+  // Sensitive auth limit: hashed key (no raw emails at rest) + fail closed.
+  const rl = await rateLimitPersistent(
+    `register:${hashedLimitKey("email", email)}`,
+    5,
+    AUTH_WINDOW_MS,
+    { failClosed: true }
+  );
   if (!rl.ok) {
     return { ok: false, reason: "RATE_LIMITED" };
   }
@@ -82,8 +92,11 @@ export async function authenticate(
   password: string,
   opts?: { expectRole?: Array<"DONOR" | "ORG_STAFF" | "ORG_ADMIN" | "PLATFORM_ADMIN">; ipHash?: string | null }
 ): Promise<{ ok: true; userId: string; role: string } | { ok: false; reason: AuthFailure }> {
-  const key = `login:${email.trim().toLowerCase()}`;
-  const rl = await rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS);
+  const key = `login:${hashedLimitKey("email", email.trim().toLowerCase())}`;
+  // Sensitive auth limit: hashed key + fail closed on limiter failure.
+  const rl = await rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS, {
+    failClosed: true,
+  });
   if (!rl.ok) return { ok: false, reason: "RATE_LIMITED" };
 
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
@@ -118,19 +131,42 @@ export async function logout(): Promise<void> {
  * Link a blood-bank-recorded donation to the signed-in donor via its opaque
  * single-use link code. Codes are printed on donation acknowledgements (demo:
  * staff portal / seed output). Attempts audited; generic failure copy.
+ * FAILED attempts are rate limited per user + hashed IP (fail closed).
  */
+export type LinkFailure = "INVALID" | "RATE_LIMITED";
+const MAX_LINK_FAILURES = 10;
+const LINK_FAILURE_WINDOW_MS = 15 * 60_000;
+
 export async function linkDonationToDonor(
   userId: string,
   donorProfileId: string | null,
-  linkCode: string
-): Promise<{ ok: boolean }> {
+  linkCode: string,
+  ip?: string | null
+): Promise<{ ok: true } | { ok: false; reason: LinkFailure }> {
+  const failKey = `linkfail:${userId}:${hashedLimitKey("ip", ip ?? "unknown")}`;
   const code = linkCode.trim();
-  if (!/^[A-Za-z0-9-]{6,32}$/.test(code)) return { ok: false };
+  const denyRateLimited = async (): Promise<{ ok: false; reason: LinkFailure }> => {
+    // Charge the failed attempt before reporting it.
+    await rateLimitPersistent(failKey, MAX_LINK_FAILURES, LINK_FAILURE_WINDOW_MS, {
+      failClosed: true,
+    });
+    return { ok: false, reason: "INVALID" };
+  };
+
+  if (!/^[A-Za-z0-9-]{6,32}$/.test(code)) {
+    return denyRateLimited();
+  }
+  // Budget check WITHOUT consuming quota — only failures are charged.
+  const budget = await peekRateLimitPersistent(failKey, MAX_LINK_FAILURES, LINK_FAILURE_WINDOW_MS);
+  if (!budget.ok) return { ok: false, reason: "RATE_LIMITED" };
+
   const donation = await prisma.donation.findUnique({
     where: { linkCode: code },
     include: { organization: { select: { name: true } } },
   });
-  if (!donation || donation.linkStatus !== "UNLINKED") return { ok: false };
+  if (!donation || donation.linkStatus !== "UNLINKED") {
+    return denyRateLimited();
+  }
 
   class LinkLostRaceError extends Error {}
   try {
@@ -148,7 +184,7 @@ export async function linkDonationToDonor(
       if (claimed.count === 0) throw new LinkLostRaceError();
     });
   } catch (err) {
-    if (err instanceof LinkLostRaceError) return { ok: false };
+    if (err instanceof LinkLostRaceError) return denyRateLimited();
     throw err;
   }
   await recordAudit({

@@ -8,7 +8,7 @@ import {
   type IngestContext,
 } from "@/lib/services/ingest";
 import { decryptSecret, sha256Hex, verifySignedRequest } from "@/lib/crypto";
-import { rateLimitPersistent } from "@/lib/rate-limit";
+import { clientIpFrom, hashedLimitKey, rateLimitPersistent } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api";
 
 /**
@@ -20,6 +20,7 @@ import { apiError } from "@/lib/api";
 
 const RATE_LIMIT_PER_MIN = 120;
 const RATE_WINDOW_MS = 60_000;
+const UNAUTH_RATE_LIMIT_PER_MIN = 30;
 
 type Disposition = "ACCEPTED" | "DUPLICATE" | "INVALID" | "UNAUTHORIZED" | "ERROR";
 
@@ -98,6 +99,23 @@ export async function POST(req: Request): Promise<Response> {
   const keyId = req.headers.get("x-raktsetu-key");
   const timestamp = req.headers.get("x-raktsetu-timestamp");
   const signature = req.headers.get("x-raktsetu-signature");
+
+  // Unauthenticated / spoofed-key traffic is throttled per hashed IP so
+  // header rotation cannot spawn unbounded limiter buckets or brute-force
+  // credentials. Raw IPs are never persisted.
+  if (!keyId) {
+    const ip = clientIpFrom(req.headers) ?? "anonymous";
+    const rl = await rateLimitPersistent(
+      `api-unknown:${hashedLimitKey("ip", ip)}`,
+      UNAUTH_RATE_LIMIT_PER_MIN,
+      RATE_WINDOW_MS
+    );
+    if (!rl.ok) {
+      return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
+        retry_after_sec: rl.retryAfterSec,
+      });
+    }
+  }
 
   if (keyId) {
     const rl = await rateLimitPersistent(`api:${keyId}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);

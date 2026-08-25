@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { getDictionary, LOCALES } from "@/i18n";
 import { recordAudit } from "@/lib/audit";
 import { logout, linkDonationToDonor } from "@/lib/services/account";
+import { clientIpFrom } from "@/lib/rate-limit";
 import { can, requireRole } from "@/lib/rbac";
 import { prisma } from "@/packages/database/client";
 import { DONOR_CONSENT_PURPOSES, type DonorActionState } from "./types";
@@ -29,8 +31,19 @@ export async function linkDonationAction(
   const parsed = LinkSchema.safeParse({ linkCode: formData.get("linkCode") });
   if (!parsed.success) return { ok: false, message: d.donor.linkInvalid };
 
-  const result = await linkDonationToDonor(user.id, user.donorProfileId, parsed.data.linkCode);
-  if (!result.ok) return { ok: false, message: d.donor.linkInvalid };
+  const h = await headers();
+  const result = await linkDonationToDonor(
+    user.id,
+    user.donorProfileId,
+    parsed.data.linkCode,
+    clientIpFrom(h)
+  );
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: result.reason === "RATE_LIMITED" ? d.donor.linkRateLimited : d.donor.linkInvalid,
+    };
+  }
 
   revalidatePath("/dashboard");
   return { ok: true, message: d.donor.linkSuccess };

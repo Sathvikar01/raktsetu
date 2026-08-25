@@ -8,7 +8,7 @@ import { prisma } from "@/packages/database/client";
 import { randomToken, hashWithPepper } from "@/lib/crypto";
 import { hashPassword, passwordIssues } from "@/lib/auth/passwords";
 import { recordAudit } from "@/lib/audit";
-import { rateLimitPersistent } from "@/lib/rate-limit";
+import { hashedLimitKey, rateLimitPersistent } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
 import { enqueueEmailWithImmediateDelivery } from "@/packages/notifications/outbox-worker";
 
@@ -20,7 +20,13 @@ export type ResetFailure = "INVALID_TOKEN" | "WEAK_PASSWORD";
 /** Always returns ok — never reveals whether the account exists. */
 export async function requestPasswordReset(email: string, ipHash?: string | null): Promise<{ ok: true }> {
   const normalized = email.trim().toLowerCase();
-  const rl = await rateLimitPersistent(`pwreset:${normalized}`, 3, REQUEST_WINDOW_MS);
+  // Sensitive auth limit: hashed key (raw email never persisted) + fail closed.
+  const rl = await rateLimitPersistent(
+    `pwreset:${hashedLimitKey("email", normalized)}`,
+    3,
+    REQUEST_WINDOW_MS,
+    { failClosed: true }
+  );
   if (!rl.ok) return { ok: true };
 
   const user = await prisma.user.findUnique({

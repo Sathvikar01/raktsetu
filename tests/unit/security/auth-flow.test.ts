@@ -267,7 +267,7 @@ describe("linkDonationToDonor", () => {
 
   it("rejects a second, different donor trying to claim the same code", async () => {
     const res = await linkDonationToDonor(donorB.id, null, linkCode);
-    expect(res).toEqual({ ok: false });
+    expect(res).toEqual({ ok: false, reason: "INVALID" });
     // Ownership must not have moved.
     const donation = await prisma.donation.findUnique({ where: { linkCode } });
     const profileA = await prisma.donorProfile.findUnique({ where: { userId: donorA.id } });
@@ -276,13 +276,27 @@ describe("linkDonationToDonor", () => {
 
   it("fails explicitly when the donation is already linked (not idempotent success)", async () => {
     const res = await linkDonationToDonor(donorA.id, null, linkCode);
-    expect(res).toEqual({ ok: false });
+    expect(res).toEqual({ ok: false, reason: "INVALID" });
   });
 
   it("rejects codes that do not match the opaque format", async () => {
     for (const bad of ["", "a", "has space!", "../etc/passwd", "<script>"]) {
       const res = await linkDonationToDonor(donorA.id, null, bad);
-      expect(res).toEqual({ ok: false });
+      expect(res).toEqual({ ok: false, reason: "INVALID" });
     }
+  });
+
+  it("rate limits repeated failed attempts (LinkLimit)", async () => {
+    // The failures charged above count toward the budget; keep failing until
+    // the limiter trips.
+    let sawRateLimited = false;
+    for (let i = 0; i < 30; i++) {
+      const res = await linkDonationToDonor(donorB.id, null, "zzzzzz-zzzzzz");
+      if (!res.ok && res.reason === "RATE_LIMITED") {
+        sawRateLimited = true;
+        break;
+      }
+    }
+    expect(sawRateLimited).toBe(true);
   });
 });

@@ -3,27 +3,17 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getCommunityStats } from "@/lib/services/stats";
 import { apiError } from "@/lib/api";
-import { rateLimitPersistent } from "@/lib/rate-limit";
+import { clientIpFrom, hashedLimitKey, rateLimitPersistent } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_PER_MIN = 60;
 const RATE_WINDOW_MS = 60_000;
 
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-  return "anonymous";
-}
-
 export async function GET(request: Request): Promise<Response> {
-  const ip = getClientIp(request);
-  const rl = await rateLimitPersistent(`stats:${ip}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
+  const ip = clientIpFrom(request.headers) ?? "anonymous";
+  // Raw IPs are never persisted as limiter keys (privacy).
+  const rl = await rateLimitPersistent(`stats:${hashedLimitKey("ip", ip)}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
   if (!rl.ok) {
     return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
       retry_after_sec: rl.retryAfterSec,

@@ -29,6 +29,8 @@ export function RunDemoButton({ demoMode }: { demoMode: boolean }) {
         const res: DemoJourneyResult = await runDemoJourneyAction();
         if (res.ok) {
           setResult(res);
+        } else if (res.message === "RATE_LIMITED") {
+          setError(d.public.demoRateLimited);
         } else {
           setError(res.message ?? d.common.errorGeneric);
         }
