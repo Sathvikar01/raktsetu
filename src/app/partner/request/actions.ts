@@ -4,7 +4,7 @@ import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitPersistent } from "@/lib/rate-limit";
 import { prisma } from "@/packages/database/client";
 import { getDictionary } from "@/i18n";
 import type { PartnerRequestState } from "./types";
@@ -40,7 +40,7 @@ export async function submitPartnerRequestAction(
   const d = getDictionary();
   const t = d.public.partnerRequest;
 
-  const rl = rateLimit("partner-request", 5, 15 * 60_000);
+  const rl = await rateLimitPersistent("partner-request", 5, 15 * 60_000);
   if (!rl.ok) {
     return { ok: false, message: t.errorRateLimited };
   }

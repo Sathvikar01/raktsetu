@@ -8,7 +8,7 @@ import {
   type IngestContext,
 } from "@/lib/services/ingest";
 import { decryptSecret, sha256Hex, verifySignedRequest } from "@/lib/crypto";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitPersistent } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api";
 
 /**
@@ -100,7 +100,7 @@ export async function POST(req: Request): Promise<Response> {
   const signature = req.headers.get("x-raktsetu-signature");
 
   if (keyId) {
-    const rl = rateLimit(`api:${keyId}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
+    const rl = await rateLimitPersistent(`api:${keyId}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
     if (!rl.ok) {
       return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
         retry_after_sec: rl.retryAfterSec,

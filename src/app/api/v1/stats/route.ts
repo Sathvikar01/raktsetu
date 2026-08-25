@@ -3,7 +3,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getCommunityStats } from "@/lib/services/stats";
 import { apiError } from "@/lib/api";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitPersistent } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ function getClientIp(request: Request): string {
 
 export async function GET(request: Request): Promise<Response> {
   const ip = getClientIp(request);
-  const rl = rateLimit(`stats:${ip}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
+  const rl = await rateLimitPersistent(`stats:${ip}`, RATE_LIMIT_PER_MIN, RATE_WINDOW_MS);
   if (!rl.ok) {
     return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
       retry_after_sec: rl.retryAfterSec,

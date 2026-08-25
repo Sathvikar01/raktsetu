@@ -400,3 +400,15 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([orgId, createdAt])
 }
+
+
+// ---------------------------------------------------------------------------
+// Persistent rate limiting (multi-instance safe)
+// ---------------------------------------------------------------------------
+
+model RateLimitBucket {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

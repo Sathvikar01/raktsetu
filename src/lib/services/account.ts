@@ -4,7 +4,7 @@ import { prisma } from "@/packages/database/client";
 import { hashPassword, verifyPassword, passwordIssues } from "@/lib/auth/passwords";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { recordAudit } from "@/lib/audit";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitPersistent } from "@/lib/rate-limit";
 
 const MAX_AUTH_ATTEMPTS = 10;
 const AUTH_WINDOW_MS = 15 * 60_000;
@@ -22,7 +22,8 @@ export async function registerDonor(
   input: RegisterInput
 ): Promise<{ ok: true; userId: string } | { ok: false; reason: AuthFailure }> {
   const email = input.email.trim().toLowerCase();
-  if (rateLimit(`register:${email}`, 5, AUTH_WINDOW_MS).ok === false) {
+  const rl = await rateLimitPersistent(`register:${email}`, 5, AUTH_WINDOW_MS);
+  if (!rl.ok) {
     return { ok: false, reason: "RATE_LIMITED" };
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, reason: "INVALID" };
@@ -69,7 +70,7 @@ export async function authenticate(
   opts?: { expectRole?: Array<"DONOR" | "ORG_STAFF" | "ORG_ADMIN" | "PLATFORM_ADMIN">; ipHash?: string | null }
 ): Promise<{ ok: true; userId: string; role: string } | { ok: false; reason: AuthFailure }> {
   const key = `login:${email.trim().toLowerCase()}`;
-  const rl = rateLimit(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS);
+  const rl = await rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS);
   if (!rl.ok) return { ok: false, reason: "RATE_LIMITED" };
 
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
