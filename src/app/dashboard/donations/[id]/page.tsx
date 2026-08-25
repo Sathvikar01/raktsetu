@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Clock } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -68,6 +69,26 @@ const JOURNEY_KEYS = [
   "journeyReady",
   "journeyPatientCare",
 ] as const;
+
+/** Whole days between date-only boundaries (day granularity, PI-4). */
+function daysAgo(from: Date): number {
+  const now = new Date();
+  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+function stalenessCopy(latestReceivedAt: Date | null): string | null {
+  if (!latestReceivedAt) return null;
+  const n = daysAgo(latestReceivedAt);
+  const when =
+    n === 0
+      ? translate(DEFAULT_LOCALE, "donor.stalenessToday")
+      : n === 1
+        ? translate(DEFAULT_LOCALE, "donor.stalenessYesterday")
+        : translate(DEFAULT_LOCALE, "donor.stalenessDaysAgo", { count: n });
+  return translate(DEFAULT_LOCALE, "donor.stalenessLastUpdate", { when });
+}
 
 export default async function DonationDetailPage({
   params,
@@ -174,6 +195,21 @@ export default async function DonationDetailPage({
             current={doneCount}
             ariaLabel={d.donor.journeyStepperAria}
           />
+          {(() => {
+            const latest = eventRows.reduce<Date | null>(
+              (acc, e) => (!acc || e.receivedAt > acc ? e.receivedAt : acc),
+              null
+            );
+            const copy = stalenessCopy(latest);
+            return copy ? (
+              <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-ink-faint">
+                <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                <span>
+                  {copy} {d.donor.stalenessNote}
+                </span>
+              </p>
+            ) : null;
+          })()}
         </CardBody>
       </Card>
 

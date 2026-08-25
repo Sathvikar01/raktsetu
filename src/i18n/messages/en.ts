@@ -404,6 +404,12 @@ const en = {
     componentsTitle: "Components from this donation",
     backToDashboard: "Back to dashboard",
     eventFacilityCity: "Facility location: {city}",
+    stalenessLastUpdate: "Last update received from the reporting system {when}.",
+    stalenessToday: "today",
+    stalenessYesterday: "yesterday",
+    stalenessDaysAgo: "{count} days ago",
+    stalenessNote:
+      "If nothing has changed since, the partner system hasn't reported a new step yet — silence here means no new verified records, never lost information.",
     provenanceLead: "Verified against",
     provenanceOrg: "Organization: {value}",
     provenanceSourceSystem: "Source system: {value}",
