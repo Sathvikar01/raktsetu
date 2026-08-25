@@ -60,6 +60,8 @@ function HospitalSimpleForm({
             options={components}
             label={d.staff.labelComponent}
             pickPlaceholder={d.staff.optionPickComponent}
+            organizationId={organizationId}
+            scope="hospital"
           />
 
           {extraField === "issuedToRef" ? (
@@ -198,6 +200,8 @@ export function TransfuseForm({
             options={units}
             label={d.staff.labelComponent}
             pickPlaceholder={d.staff.optionPickComponent}
+            organizationId={organizationId}
+            scope="hospital"
           />
 
           {/* Disclosure sub-form */}

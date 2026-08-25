@@ -220,6 +220,12 @@ const en = {
     demoStepView: "Open the journey — including the privacy-filtered impact update.",
     demoRateLimited:
       "You've run the demo several times recently. Please try again in a little while.",
+    demoViewAsDonor: "View as demo donor",
+    demoOrExplore: "Prefer the full experience? Register and link the code yourself:",
+    demoBadge: "Interactive demo",
+    demoDonorNote:
+      "This is the same view the donor sees: verified events only, recipient data aggregated, nothing identifiable.",
+    backToDemo: "Back to demo",
     demoDisabledNote:
       "The interactive demo requires DEMO_MODE. Follow the quickstart in the README to run it locally.",
     demoApiDetailsTitle: "Prefer the API? See the signed shell commands",
@@ -732,6 +738,7 @@ const en = {
     scanInputLabel: "Scan barcode / type code",
     scanInputPlaceholder: "Point the scanner and pull the trigger, or type the unit code",
     scanMatched: "Unit matched — ready to submit.",
+    scanNoMatch: "No unit found for that code in your organization.",
     labelComponent: "Component",
     bbExpireTitle: "Mark expired",
     bbDiscardTitle: "Discard component",

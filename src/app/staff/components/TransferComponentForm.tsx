@@ -32,6 +32,8 @@ export function TransferComponentForm({
             options={components}
             label={d.staff.labelComponent}
             pickPlaceholder={d.staff.optionPickComponent}
+            organizationId={organizationId}
+            scope="transfer"
           />
           <div>
             <Label htmlFor="tr-destination">{d.staff.labelDestinationCode}</Label>

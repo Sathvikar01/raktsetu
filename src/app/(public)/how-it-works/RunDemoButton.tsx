@@ -88,9 +88,18 @@ export function RunDemoButton({ demoMode }: { demoMode: boolean }) {
               <li>{d.public.demoStepLink}</li>
               <li>{d.public.demoStepView}</li>
             </ol>
-            <Link href="/register" className={buttonClasses("primary", "md")}>
-              {d.common.signUp}
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/demo/donor/${encodeURIComponent(result.linkCode ?? "")}`}
+                className={buttonClasses("primary", "md")}
+              >
+                {d.public.demoViewAsDonor}
+              </Link>
+              <Link href="/register" className={buttonClasses("ghost", "md")}>
+                {d.common.signUp}
+              </Link>
+            </div>
+            <p className="text-xs text-ink-faint">{d.public.demoOrExplore}</p>
           </div>
         </div>
       ) : null}

@@ -402,3 +402,94 @@ export async function signOutStaffAction(): Promise<void> {
   await logout();
   redirect("/");
 }
+
+// ---------------------------------------------------------------------------
+// Scanner resolution (server-side)
+// ---------------------------------------------------------------------------
+
+const ScanSchema = z.object({
+  organizationId: z.string().min(1),
+  code: z.string().trim().min(4).max(64),
+  scope: z.enum(["transfer", "hospital"]),
+});
+
+export interface ScanResolution {
+  ok: boolean;
+  option?: { value: string; label: string };
+}
+
+/**
+ * Resolve a scanned/typed unit code against the DATABASE instead of the
+ * preloaded option list, so units outside the last-N preload window still
+ * resolve. Tenant rules mirror ingestEvent(): a blood bank scans its own
+ * units; a hospital scans units a VERIFIED, non-superseded transfer addressed
+ * to one of its facilities.
+ */
+export async function resolveScanAction(input: unknown): Promise<ScanResolution> {
+  await requireRole("ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN");
+  const parsedInput = ScanSchema.safeParse(input);
+  if (!parsedInput.success) return { ok: false };
+  const { organizationId, code, scope } = parsedInput.data;
+  if (!(await gateOrgMembership(organizationId))) throw new ForbiddenError();
+
+  // Exact external id first; fall back to a UNIQUE suffix match (scanners
+  // often emit only the tail of an ISBT-128 barcode).
+  const candidates = await prisma.bloodComponent.findMany({
+    where: {
+      OR: [{ externalComponentId: code }, { externalComponentId: { endsWith: code } }],
+    },
+    select: {
+      id: true,
+      externalComponentId: true,
+      componentType: true,
+      currentDerivedState: true,
+      donation: { select: { organizationId: true } },
+    },
+    take: 2,
+  });
+  if (candidates.length !== 1) return { ok: false };
+
+  const component = candidates[0]!;
+  if (component.donation.organizationId === organizationId) {
+    if (scope !== "transfer") return { ok: false };
+  } else {
+    // Foreign-donation scan: require hospital authorization predicate.
+    const facilities = await prisma.facility.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+    const facilityIds = new Set(facilities.map((f) => f.id));
+    if (facilityIds.size === 0) return { ok: false };
+    const transfers = await prisma.lifecycleEvent.findMany({
+      where: {
+        componentId: component.id,
+        eventType: "COMPONENT_TRANSFERRED",
+        verificationStatus: "VERIFIED",
+        supersededByCorrection: false,
+      },
+      select: { payloadJson: true },
+    });
+    const authorized = transfers.some((t) => {
+      try {
+        const p = t.payloadJson ? (JSON.parse(t.payloadJson) as Record<string, unknown>) : {};
+        const dest = typeof p["destination_facility_id"] === "string" ? p["destination_facility_id"] : null;
+        return dest ? facilityIds.has(dest) : false;
+      } catch {
+        return false;
+      }
+    });
+    if (!authorized || scope !== "hospital") return { ok: false };
+  }
+
+  const d = getDictionary();
+  return {
+    ok: true,
+    option: {
+      value: component.id,
+      label:
+        (component.externalComponentId ?? "?") +
+        ` · ${d.components[component.componentType as keyof typeof d.components] ?? component.componentType}` +
+        ` · ${component.currentDerivedState}`,
+    },
+  };
+}
