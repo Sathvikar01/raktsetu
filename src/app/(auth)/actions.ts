@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession } from "@/lib/auth/session";
 import { authenticate, registerDonor, type AuthFailure } from "@/lib/services/account";
+import { beginMfaChallenge, mfaEnrolled } from "@/lib/services/mfa";
 
 const EMAIL = z.string().trim().min(3).max(254);
 
@@ -49,6 +50,12 @@ export async function loginAction(formData: FormData): Promise<void> {
           ? "disabled"
           : "invalid";
     redirect(`/login?error=${code}`);
+  }
+
+  // Admins must pass the second factor before any session exists.
+  if (result.mfaRequired) {
+    await beginMfaChallenge(result.userId);
+    redirect((await mfaEnrolled(result.userId)) ? "/mfa/challenge" : "/mfa/enroll");
   }
 
   await createSession(result.userId);

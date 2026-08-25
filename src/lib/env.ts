@@ -58,6 +58,16 @@ export const env = {
   PRIVACY_MIN_AGGREGATE: Number(process.env.PRIVACY_MIN_AGGREGATE ?? 10),
   SESSION_TTL_DAYS: Number(process.env.SESSION_TTL_DAYS ?? 30),
   EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? "console", // console | resend
+  /**
+   * TOTP MFA for ORG_ADMIN / PLATFORM_ADMIN logins. Defaults ON in production
+   * (set REQUIRE_ADMIN_MFA=false to opt out on pure-demo deployments); OFF in
+   * development unless explicitly enabled.
+   */
+  get REQUIRE_ADMIN_MFA() {
+    const raw = process.env.REQUIRE_ADMIN_MFA;
+    if (raw !== undefined) return raw === "true";
+    return this.NODE_ENV === "production";
+  },
   APP_URL: resolveAppUrl(),
   get isProd() {
     return this.NODE_ENV === "production";

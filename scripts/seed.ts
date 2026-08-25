@@ -238,6 +238,30 @@ async function main(): Promise<number> {
     create: { userId: donor.id }, // platform defaults: inApp+email on, descriptive off
   });
 
+  // --- TOTP secrets for privileged demo accounts --------------------------
+  // REQUIRE_ADMIN_MFA defaults ON in production; provisioning real secrets
+  // here keeps admin demo logins usable everywhere. Idempotent: an existing
+  // secret is never rotated.
+  const { generateTotpSecret } = await import("@/lib/auth/totp");
+  const mfaRows: Array<{ email: string; userId: string }> = [
+    { email: "admin@demo.local", userId: admin.id },
+    { email: "bb-staff@demo.local", userId: bbStaff.id },
+    { email: "hosp-staff@demo.local", userId: hospStaff.id },
+  ];
+  for (const row of mfaRows) {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: row.userId },
+      select: { mfaSecret: true },
+    });
+    if (!user.mfaSecret) {
+      await prisma.user.update({
+        where: { id: row.userId },
+        data: { mfaSecret: generateTotpSecret(), mfaLastCounter: 0 },
+      });
+      console.log(`[seed] TOTP secret provisioned for ${row.email} (enroll at /mfa/enroll after sign-in).`);
+    }
+  }
+
   // --- Integrations (one per demo org, credential issued once) ------------
   interface IntegrationRow {
     orgName: string;

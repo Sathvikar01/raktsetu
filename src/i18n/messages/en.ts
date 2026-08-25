@@ -910,6 +910,23 @@ const en = {
     componentPreparedBodyMany: "{count} blood components were prepared from your donation.",
     transfusedDescriptive: "One of your blood components was successfully transfused.",
   },
+  mfa: {
+    challengeTitle: "Two-factor verification",
+    challengeBody:
+      "Enter the 6-digit code from your authenticator app to finish signing in.",
+    codeLabel: "Authenticator code",
+    verifyButton: "Verify and sign in",
+    confirmEnrollment: "Confirm and sign in",
+    invalidCode: "That code wasn't valid. Codes rotate every 30 seconds — try the current one.",
+    expired: "This sign-in attempt expired. Please sign in again.",
+    rateLimited: "Too many attempts. Please wait a few minutes and sign in again.",
+    enrollTitle: "Set up two-factor authentication",
+    enrollBody:
+      "Admin accounts require an authenticator app (e.g. Google Authenticator, 1Password, Authy). Scan the QR or enter the key manually, then confirm with a current code.",
+    manualKey: "Manual key",
+    enrollNote:
+      "Keep this secret somewhere safe. You will need a fresh code from this app at every admin sign-in.",
+  },
 };
 
 export default en;

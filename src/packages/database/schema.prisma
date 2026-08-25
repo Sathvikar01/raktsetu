@@ -24,6 +24,12 @@ model User {
   role         String   @default("DONOR") // DONOR | ORG_STAFF | ORG_ADMIN | PLATFORM_ADMIN
   status       String   @default("ACTIVE") // ACTIVE | DISABLED
   mfaEnabled   Boolean  @default(false)
+  // TOTP (RFC 6238) MFA for privileged roles. Secret is base32; stored
+  // unhashed because it must be reusable for verification (like password
+  // hashes, never rendered in exports/logs).
+  mfaSecret      String?
+  mfaEnrolledAt  DateTime?
+  mfaLastCounter Int       @default(0)
   emailVerifiedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

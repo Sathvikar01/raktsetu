@@ -10,6 +10,7 @@ import {
   rateLimitPersistent,
 } from "@/lib/rate-limit";
 import { issueEmailVerification } from "@/lib/services/email-verification";
+import { mfaRequiredFor } from "@/lib/services/mfa";
 
 export type AuthFailure =
   | "INVALID"
@@ -91,7 +92,10 @@ export async function authenticate(
   email: string,
   password: string,
   opts?: { expectRole?: Array<"DONOR" | "ORG_STAFF" | "ORG_ADMIN" | "PLATFORM_ADMIN">; ipHash?: string | null }
-): Promise<{ ok: true; userId: string; role: string } | { ok: false; reason: AuthFailure }> {
+): Promise<
+  | { ok: true; userId: string; role: string; mfaRequired?: boolean }
+  | { ok: false; reason: AuthFailure }
+> {
   const key = `login:${hashedLimitKey("email", email.trim().toLowerCase())}`;
   // Sensitive auth limit: hashed key + fail closed on limiter failure.
   const rl = await rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS, {
@@ -113,6 +117,16 @@ export async function authenticate(
   const PRIVILEGED = new Set(["ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN"]);
   if (PRIVILEGED.has(user.role) && !user.emailVerifiedAt) {
     return { ok: false, reason: "EMAIL_UNVERIFIED" };
+  }
+
+  // MFA: admins stop after the first factor — no session exists until the
+  // TOTP challenge (or forced enrollment) completes.
+  if (mfaRequiredFor(user.role)) {
+    await recordAudit({
+      actorType: "USER", actorId: user.id, action: "auth.mfa_pending",
+      resourceType: "User", resourceId: user.id, ipHash: opts?.ipHash ?? null,
+    });
+    return { ok: true, userId: user.id, role: user.role, mfaRequired: true };
   }
 
   await createSession(user.id);

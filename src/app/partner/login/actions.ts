@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { authenticate } from "@/lib/services/account";
 import { createSession } from "@/lib/auth/session";
+import { beginMfaChallenge, mfaEnrolled } from "@/lib/services/mfa";
 
 const LoginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -23,6 +24,10 @@ export async function partnerLoginAction(formData: FormData): Promise<void> {
   const result = await authenticate(parsed.data.email, parsed.data.password, {
     expectRole: [...STAFF_ROLES],
   });
+  if (result.ok && result.mfaRequired) {
+    await beginMfaChallenge(result.userId);
+    redirect((await mfaEnrolled(result.userId)) ? "/mfa/challenge" : "/mfa/enroll");
+  }
   if (!result.ok) {
     const code =
       result.reason === "RATE_LIMITED"
