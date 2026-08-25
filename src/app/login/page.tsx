@@ -21,10 +21,10 @@ const ERROR_KEYS = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
   const d = getDictionary();
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
   const errorMessage =
     error && error in ERROR_KEYS
       ? d.public.auth[ERROR_KEYS[error as keyof typeof ERROR_KEYS]]
@@ -46,6 +46,11 @@ export default async function LoginPage({
         </>
       }
     >
+      {reset ? (
+        <div className="mb-5">
+          <Alert type="success">{d.public.auth.loginResetSuccess}</Alert>
+        </div>
+      ) : null}
       {errorMessage ? (
         <div className="mb-5">
           <Alert type="error">{errorMessage}</Alert>
@@ -72,6 +77,14 @@ export default async function LoginPage({
           hideLabel={d.public.auth.hidePassword}
         />
         <SubmitButton pendingLabel={d.common.loading}>{d.common.signIn}</SubmitButton>
+        <p className="text-center text-sm">
+          <Link
+            href="/forgot-password"
+            className="rounded font-medium text-ink-soft underline-offset-4 hover:text-teal-700 hover:underline focus-visible:underline"
+          >
+            {d.public.auth.forgotTitle}
+          </Link>
+        </p>
       </form>
     </AuthShell>
   );
