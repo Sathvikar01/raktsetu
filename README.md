@@ -108,24 +108,39 @@ In `.env`, set `DATABASE_URL=postgresql://raktsetu:raktsetu_dev@localhost:5432/r
 | `npm run db:push` | Sync schema to `DATABASE_URL` (dev default: SQLite) |
 | `npm run db:use:sqlite` / `db:use:postgres` | Switch database provider + push |
 | `docker compose up -d db` | Local PostgreSQL 16 (loopback only) |
-| `npm run seed` / `npm run simulate` | Create / extend the synthetic demo world |
+| `npm run seed` | Create the synthetic demo world |
+| `npm run db:clean` | Remove demo-generated data (demo journeys / simulator rows) |
+| `npm run outbox:process` | Drain queued emails now (same worker Vercel cron calls) |
+
+## Operations notes
+
+- **Auth email** (verification, password reset) is delivered inline at enqueue
+  time; `OutboxEmail` rows exist so the outbox worker can retry failures. On
+  Vercel a daily cron hits `/api/cron/outbox` — guard it with `CRON_SECRET`.
+  Locally, `npm run outbox:process` drains the queue on demand.
+- **`APP_URL` / `NEXT_PUBLIC_APP_URL`** is REQUIRED in production and must be
+  an absolute non-localhost origin; boot/build fails otherwise.
+- **Admin MFA**: ORG_ADMIN and PLATFORM_ADMIN sign-ins require TOTP
+  (`REQUIRE_ADMIN_MFA`, default ON in production). Demo accounts get secrets
+  provisioned by `npm run seed`; set `REQUIRE_ADMIN_MFA=false` for pure-demo
+  deployments.
 
 ## Repository map
 
 ```
 src/
-  app/                     routes: (public) | (donor) | staff | admin | api/v1 | api/app
+  app/                     routes: (public) | dashboard | partner | staff | admin | mfa | demo | api/v1 | api/cron | api/health
   packages/
     schemas/               zod contracts (events, API payloads, forms) — single source of truth
     database/              Prisma schema + client singleton
     domain/                state derivation, lineage, idempotency (pure)
     privacy/               disclosure engine + re-identification guards (pure, deterministic)
     integrations/          BloodSystemAdapter interface, mock adapters, HMAC verification
-    notifications/         channel-agnostic notification service
+    notifications/         channel-agnostic notification service (+ email outbox worker)
     ui/                    accessible Tailwind primitives + journey visualizations
-  lib/                     auth/session, rbac, audit, crypto, rate-limit, env, services
-tests/                     unit / integration / security / e2e (vitest)
-scripts/                   seed.ts (synthetic world), simulator, db provider switch
+  lib/                     auth/session+totp, rbac, audit, crypto, rate-limit, env, services
+tests/                     unit / integration / security (vitest)
+scripts/                   seed.ts (synthetic world), clean-demo-data.ts, process-outbox.ts, db provider switch
 CONTRACTS.md               cross-cutting conventions — read before implementing
 ```
 

@@ -1,4 +1,4 @@
-# Demo flow — seed, simulate, and evidence walkthrough
+# Demo flow — seed, run the interactive journey, and evidence walkthrough
 
 This is the zero-credentials demo path (AT-12): a fresh clone becomes a fully synthetic,
 clearly-labelled world in which one donation travels from the blood bank to a transfused
@@ -10,14 +10,14 @@ or facilities.
 
 ## Prerequisites
 
-- Node 24
+- Node 20+
 - `npm ci`
 - A `.env` at the repo root (defaults shown; see `.env.example`):
 
   ```env
   APP_SECRET=dev-insecure-secret-change-me-0123456789abcdef
   DATABASE_URL=file:./dev.db        # SQLite dev fallback -> src/packages/database/dev.db
-  DEMO_MODE=true                    # required by npm run seed / npm run simulate
+  DEMO_MODE=true                    # required by the seed and the interactive journey
   PRIVACY_MIN_COHORT=5
   PRIVACY_MIN_AGGREGATE=10
   SESSION_TTL_DAYS=30
@@ -30,18 +30,19 @@ or facilities.
 npx prisma generate        # generate the Prisma client from schema.prisma
 npm run db:use:sqlite      # switch provider to sqlite + prisma generate + db push
 npm run seed               # idempotent synthetic demo seed
-npm run simulate           # run the full donation journey headlessly
+npm run dev                # start the app on http://localhost:3000
 ```
 
-The CLI journey does **not** require the dev server — `simulate` drives domain services
-directly (`bloodbank-ops` / `hospital-ops` → `ingestEvent()`). Start `npm run dev` only if
-you want to click through the web UI afterwards.
+The journey itself runs in the web UI: open **`/how-it-works#demo`** and press the run
+button. It drives the same domain services (`bloodbank-ops` / `hospital-ops` →
+`ingestEvent()`), renders the resulting event timeline inline and shows the donation's
+single-use link code. Anonymous runs are rate limited per IP; replaying mints synthetic
+rows that are excluded from public community stats.
 
-Both scripts refuse to run when `DEMO_MODE` is not `"true"`:
+Both the seed and the journey refuse to run when `DEMO_MODE` is not `"true"`:
 
 ```
-[seed] REFUSED: DEMO_MODE is not "true". This script seeds synthetic demo data.
-Set DEMO_MODE=true in .env or re-run with --force.
+Demo mode is disabled on this deployment.
 ```
 
 ## Step 1 — `npm run seed` (actual output)
@@ -96,39 +97,24 @@ Second run proves idempotency (no new integrations, no secrets):
 Demo accounts (synthetic, dev-only): `admin@demo.local`, `bb-staff@demo.local`,
 `hosp-staff@demo.local`, `donor@demo.local` — all with password `demo-pass-1234`.
 
-## Step 2 — `npm run simulate` (actual output)
+## Step 2 — run the interactive journey (`/how-it-works#demo`)
 
-Runs donation → processing/screening → three components → RBC transfer → receipt →
-transfusion (disclosure request: BROAD_PURPOSE, EMERGENCY_CARE), auto-linking the
-donation to the donor account.
+Press the run button and the page walks donation → processing/screening → three
+components → RBC transfer → receipt → transfusion (disclosure request: BROAD_PURPOSE,
+EMERGENCY_CARE). The result panel shows the six-event timeline, the derived component
+states (RBC `TRANSFUSED`, plasma/platelets `AVAILABLE`), the granted disclosure level,
+and the donation's single-use link code.
 
-```
-RaktSetu demo journey — ALL DATA IS SYNTHETIC (synthetic demo)
-Donor account: donor@demo.local
+From there you have two instant options:
 
-Journey checklist:
-  [1/6] DONATION_COLLECTED: Donation W262350001 collected at Seva Blood Centre (synthetic demo)
-  [2/6] PROCESSING_COMPLETED: Processing + screening completed (synthetic demo)
-  [3/6] COMPONENTS_CREATED: RBC + plasma + platelet prepared (synthetic demo)
-  [4/6] COMPONENT_TRANSFERRED: RBC transferred to City General Hospital (synthetic demo)
-  [5/6] COMPONENT_RECEIVED: Received at City General Hospital (synthetic demo)
-  [6/6] COMPONENT_TRANSFUSED: Transfused in emergency care (synthetic demo)
+- **View as demo donor** — opens `/demo/donor/<linkCode>`: the real donor timeline,
+  rendered by the same disclosure-view pipeline, with no registration or code entry.
+  Available only while `DEMO_MODE=true`, and only for demo-generated donations.
+- **Full donor experience** — register at `/register`, paste the link code on the
+  dashboard, and explore the authenticated donor app (notifications, consents, export).
 
-Final component states (derived cache; events are truth):
-  PLASMA    -> AVAILABLE
-  PLATELET  -> AVAILABLE
-  RBC       -> TRANSFUSED
-
-Disclosure granted level: BROAD_PURPOSE (EMERGENCY_CARE)
-In-app notifications for donor@demo.local: 2 (titles always generic — lock-screen safe)
-
-Donation link code (single-use, opaque): cmt5jneqi00017rngvmqf2ihm
-Done. Sign in as the donor above to see the timeline + verified impact.
-```
-
-Useful flags: `--donor-email=<email>` links the journey to another donor account;
-`--force` bypasses the DEMO_MODE gate. Re-running `simulate` performs an additional
-journey each time (new donation, new components).
+Re-running the journey mints an additional synthetic journey each time (new donation,
+new components).
 
 ## Donor perspective (sign-in walkthrough)
 
@@ -209,4 +195,4 @@ npx prisma db push --skip-generate         # recreate empty schema
 npm run seed                               # re-seed the synthetic demo world
 ```
 
-Then `npm run simulate` again for a fresh journey.
+Then run the interactive journey again for a fresh synthetic donation.

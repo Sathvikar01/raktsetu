@@ -28,18 +28,28 @@ npm run db:use:postgres          # switch to postgresql + push (needs DATABASE_U
 
 ## 2. Production topology
 
-Primary target: **docker-compose running the Next.js app plus PostgreSQL 16**, behind a reverse proxy that terminates TLS.
+Two supported production shapes:
+
+- **Vercel** (this repository ships `vercel.json`): the platform runs the app;
+  bring your own PostgreSQL 16 and set the environment variables below. A
+  daily cron calls `/api/cron/outbox`; protect it with `CRON_SECRET`.
+- **Self-managed**: run PostgreSQL 16 via docker-compose (`docker compose up -d db`
+  uses the committed compose file, service name `db`) and the Next.js app on a
+  Node host or your own container image (no Dockerfile is shipped — build one
+  from `next build` output or use `next start`). Behind a reverse proxy that
+  terminates TLS.
 
 ```powershell
-# from the repository root, once infrastructure files are present:
-docker compose up -d             # app + postgres:16
+# database only, from the repository root:
+docker compose up -d db             # postgres:16 on 127.0.0.1:5432
 ```
 
-Reference composition (the ops wave ships `Dockerfile` + `docker-compose.yml` at the repo root; until your checkout includes them, treat this as the canonical definition):
+Reference composition for a fully containerized stack (build your own app
+image; treat this as the canonical definition):
 
 ```yaml
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: raktsetu
@@ -53,14 +63,15 @@ services:
       retries: 5
 
   app:
-    image: raktsetu:latest        # built from this repository
+    image: raktsetu:latest        # your built image of this repository
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://raktsetu:${POSTGRES_PASSWORD}@postgres:5432/raktsetu
+      DATABASE_URL: postgresql://raktsetu:${POSTGRES_PASSWORD}@db:5432/raktsetu
       APP_SECRET: ${APP_SECRET:?required}
+      APP_URL: ${APP_URL:?required}
       DEMO_MODE: "false"
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
@@ -82,7 +93,11 @@ Set in `.env` or compose `environment:` (never bake secrets into images).
 | --- | --- | --- | --- |
 | `APP_SECRET` | **yes in prod** | insecure dev fallback | Root key for credential encryption (AES-256-GCM of partner secrets), token peppering, HMAC key derivation. Generate with the PowerShell one-liner below. **Rotating it invalidates encrypted credential secrets — plan a rotation ceremony.** |
 | `DATABASE_URL` | yes | `file:./dev.db` | Postgres: `postgresql://user:pass@host:5432/raktsetu`. SQLite: `file:./dev.db`. |
-| `DEMO_MODE` | **must be `false` in prod** | `true` in `.env.example` | Enables simulator endpoints and relaxed aggregate thresholds for seeded data. **A production deployment with `DEMO_MODE=true` is a misconfiguration.** |
+| `DEMO_MODE` | **must be `false` in prod** | `false` in `.env.example` | Enables the interactive demo journey, instant demo-donor view and relaxed aggregate thresholds. **A production deployment with `DEMO_MODE=true` is a misconfiguration.** |
+| `APP_URL` / `NEXT_PUBLIC_APP_URL` | **yes in prod** | localhost (dev only) | Canonical absolute origin for emailed links and metadata. Production boot/build fails on a missing value or a localhost origin. |
+| `EMAIL_PROVIDER` | no | `console` | `console` logs auth mail; `resend` delivers it via RESEND_API_KEY + EMAIL_FROM. Verification/reset mail is sent inline; outbox rows back retries. |
+| `REQUIRE_ADMIN_MFA` | no | ON in prod | TOTP second factor for ORG_ADMIN / PLATFORM_ADMIN sign-ins. Set `false` only on pure-demo deployments. |
+| `CRON_SECRET` | yes with Vercel cron | unset | Bearer token guarding `/api/cron/outbox`. |
 | `PRIVACY_MIN_COHORT` | no | `5` | k-anonymity floor for LIMITED_ANON disclosure rendering. |
 | `PRIVACY_MIN_AGGREGATE` | no | `10` | Suppression floor for public aggregate statistics. |
 | `SESSION_TTL_DAYS` | no | `30` | Session lifetime. Shorten for higher-assurance deployments. |
@@ -146,7 +161,12 @@ Protect backups like PHI: encrypt at rest, restrict access, test restores quarte
 
 ## 6. Rate limiting at scale
 
-The bundled rate limiter is an in-memory sliding window — correct for single-instance deployments. For multi-node production, point the same interface at Redis (or an equivalent shared store) so limits are enforced cluster-wide. Keep the per-credential semantics identical (`429` + `Retry-After`) so partner integrations behave the same either way.
+The bundled limiter is a **DB-backed fixed window** (`RateLimitBucket`), shared
+across all app instances and keyed by HMAC-hashed identities (emails/IPs are
+never stored in plaintext). Public surfaces fail open on limiter errors;
+auth/link controls fail closed. For very high-traffic deployments, point the
+same interface at Redis so limits stay cluster-wide under heavy write load.
+Keep the semantics identical (`429` + `Retry-After`) for partner integrations.
 
 ## 7. Retention policy configuration
 
@@ -167,9 +187,11 @@ Document your chosen values in your operations runbook and privacy notice; see d
 1. Read the release notes; check for breaking env/schema changes.
 2. Announce a maintenance window (ingestion partners receive `5xx`/timeouts and retry idempotently).
 3. Backup (§4).
-4. Pull the new revision; rebuild the app image.
-5. Apply migrations: `npx prisma migrate deploy`.
+4. Pull the new revision; rebuild/redeploy the app.
+5. Apply schema changes the way you manage them:
+   - `db push` workflow (default): `npm run db:push` against the production database during the window; or
+   - if you maintain a migration history (§3): `npx prisma migrate deploy`.
 6. Start the new app version; verify `/api/health`, then smoke-test: donor login, event ingestion replay (should return `duplicate`), public stats page.
-7. Roll back = previous image + restore backup if a migration was destructive; otherwise previous image alone usually suffices.
+7. Roll back = previous image + restore backup if a schema change was destructive; otherwise previous image alone usually suffices.
 
 Keep `DEMO_MODE=false`, secrets out of images, and the reverse proxy in front — every time.
