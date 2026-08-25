@@ -41,7 +41,7 @@ async function authorizedComponentIds(organizationId: string): Promise<string[]>
   const ids = new Set<string>();
   if (facilityIds.size > 0) {
     const transfers = await prisma.lifecycleEvent.findMany({
-      where: { eventType: "COMPONENT_TRANSFERRED", verificationStatus: "VERIFIED", componentId: { not: null } },
+      where: { eventType: "COMPONENT_TRANSFERRED", verificationStatus: "VERIFIED", supersededByCorrection: false, componentId: { not: null } },
       orderBy: { receivedAt: "desc" },
       take: 1000, // demo-scale scan; predicate mirrors hospitalAuthorizedForComponent()
       select: { componentId: true, payloadJson: true },

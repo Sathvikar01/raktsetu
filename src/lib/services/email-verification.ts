@@ -1,7 +1,8 @@
 import "server-only";
 /**
  * Email verification.
- * - Verification emails queue through the outbox worker (Resend/console).
+ * - Verification emails are delivered inline (outbox row kept for retry by
+ *   the worker — Resend/console).
  * - Staff/admin roles REQUIRE a verified email to sign in; donors are nudged
  *   but not blocked (verification proves channel reachability, not identity).
  */
@@ -10,6 +11,7 @@ import { randomToken, hashWithPepper } from "@/lib/crypto";
 import { recordAudit } from "@/lib/audit";
 import { rateLimitPersistent } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
+import { enqueueEmailWithImmediateDelivery } from "@/packages/notifications/outbox-worker";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -31,20 +33,18 @@ export async function issueEmailVerification(userId: string): Promise<void> {
     },
   });
   const verifyUrl = `${env.APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
-  await prisma.outboxEmail.create({
-    data: {
-      toEmail: user.email,
-      subject: "Verify your RaktSetu email",
-      bodyText: [
-        `Hi ${user.displayName},`,
-        "",
-        "Confirm this email address for your RaktSetu account:",
-        verifyUrl,
-        "",
-        "The link is valid for 24 hours.",
-      ].join("\n"),
-      status: "QUEUED",
-    },
+  // Delivered inline; the outbox row exists only so the worker can retry.
+  await enqueueEmailWithImmediateDelivery({
+    toEmail: user.email,
+    subject: "Verify your RaktSetu email",
+    bodyText: [
+      `Hi ${user.displayName},`,
+      "",
+      "Confirm this email address for your RaktSetu account:",
+      verifyUrl,
+      "",
+      "The link is valid for 24 hours.",
+    ].join("\n"),
   });
   await recordAudit({
     actorType: "SYSTEM",

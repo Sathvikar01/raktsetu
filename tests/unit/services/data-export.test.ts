@@ -127,7 +127,7 @@ describe("buildDonorDataExport", () => {
         componentId: component.id,
         donationId: donation.id,
         organizationId: org.id,
-        eventType: "TRANSFUSED",
+        eventType: "COMPONENT_TRANSFUSED",
         occurredAt: new Date("2026-01-20T09:00:00Z"),
         sourceSystem: "export-test-lis",
         sourceEventId: "SE-1",

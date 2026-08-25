@@ -21,6 +21,9 @@ const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 /**
  * Staff/admin sessions are short-lived (12h) regardless of the donor TTL —
  * privileged roles must re-authenticate at least daily.
+ *
+ * Every login/registration yields EXACTLY ONE valid session: prior sessions
+ * for the user are revoked in the same transaction that issues the new one.
  */
 export async function createSession(userId: string): Promise<{ token: string; csrf: string }> {
   const token = randomToken(32);
@@ -32,9 +35,12 @@ export async function createSession(userId: string): Promise<{ token: string; cs
   const staff = user ? ["ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN"].includes(user.role) : false;
   const ttlMs = staff ? STAFF_SESSION_TTL_MS : env.SESSION_TTL_DAYS * 86_400_000;
   const expiresAt = new Date(Date.now() + ttlMs);
-  await prisma.session.create({
-    data: { userId, tokenHash: hashWithPepper(token), expiresAt },
-  });
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { userId } }),
+    prisma.session.create({
+      data: { userId, tokenHash: hashWithPepper(token), expiresAt },
+    }),
+  ]);
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,

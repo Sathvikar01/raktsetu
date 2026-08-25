@@ -78,8 +78,9 @@ async function loadDisclosureViews(componentIds: string[]): Promise<DonorDataExp
   const events = await prisma.lifecycleEvent.findMany({
     where: {
       componentId: { in: componentIds },
-      eventType: "TRANSFUSED",
+      eventType: "COMPONENT_TRANSFUSED",
       verificationStatus: "VERIFIED",
+      supersededByCorrection: false,
     },
     orderBy: [{ occurredAt: "desc" }, { receivedAt: "desc" }],
     select: {

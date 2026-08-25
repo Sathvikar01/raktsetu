@@ -63,7 +63,7 @@ async function queryCommunityStats(min: number): Promise<CommunityStats> {
   const [donations, components, transfusions, bbCount, hospCount, byType] = await Promise.all([
     prisma.donation.count(),
     prisma.bloodComponent.count(),
-    prisma.lifecycleEvent.count({ where: { eventType: "COMPONENT_TRANSFUSED", verificationStatus: "VERIFIED" } }),
+    prisma.lifecycleEvent.count({ where: { eventType: "COMPONENT_TRANSFUSED", verificationStatus: "VERIFIED", supersededByCorrection: false } }),
     prisma.organization.count({ where: { kind: { in: ["BLOOD_BANK", "BLOOD_BANK_AND_HOSPITAL"] }, status: "ACTIVE" } }),
     prisma.organization.count({ where: { kind: { in: ["HOSPITAL", "BLOOD_BANK_AND_HOSPITAL"] }, status: "ACTIVE" } }),
     prisma.bloodComponent.groupBy({ by: ["componentType"], _count: { _all: true } }),

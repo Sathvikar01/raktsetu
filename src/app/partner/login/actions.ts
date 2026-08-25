@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { authenticate } from "@/lib/services/account";
+import { createSession } from "@/lib/auth/session";
 
 const LoginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -33,6 +34,10 @@ export async function partnerLoginAction(formData: FormData): Promise<void> {
             : "invalid";
     redirect(`/partner/login?error=${code}`);
   }
+
+  // A successful login must always yield exactly one valid session —
+  // createSession also revokes any prior session for the account.
+  await createSession(result.userId);
 
   if (result.role === "PLATFORM_ADMIN") redirect("/admin");
   redirect("/staff");

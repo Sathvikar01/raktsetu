@@ -72,9 +72,8 @@ export async function registerAction(formData: FormData): Promise<void> {
     redirect(`/register?error=${REGISTER_ERROR_CODES[registered.reason]}`);
   }
 
-  const auth = await authenticate(parsed.data.email, parsed.data.password);
-  if (!auth.ok) redirect("/login?error=invalid");
-
-  await createSession(auth.userId);
+  // registerDonor just verified the credentials it created — issue the single
+  // valid session directly instead of re-running the password verifier.
+  await createSession(registered.userId);
   redirect("/dashboard");
 }

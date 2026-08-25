@@ -59,44 +59,19 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
     return { status: "DUPLICATE", lifecycleEventId: existing.id, duplicateOf: existing.id };
   }
 
-  // ---- 2. Resolve target with tenant scoping (PI-9).
-  const isComponentEvent =
-    event.event_type.startsWith("COMPONENT_") && event.event_type !== "EVENT_CORRECTION";
-  const occurredAt = new Date(event.occurred_at);
-  let donationId: string | null = null;
-  let componentId: string | null = null;
-  let donorUserId: string | null = null;
-
-  if (isComponentEvent) {
-    const component = await resolveComponentForPartner(
-      event.component_identifier ?? null,
-      event.identifier_scheme,
-      event.donation_identifier ?? null,
-      event.facility_code ?? null,
-      ctx
-    );
-    componentId = component.id;
-    donationId = component.donationId;
-    donorUserId = component.donorUserId;
-  } else {
-    const donation = await resolveDonationForPartner(
-      event.donation_identifier ?? null,
-      event.identifier_scheme,
-      ctx
-    );
-    donationId = donation.id;
-    donorUserId = donation.donorUserId;
-  }
-
   // ---- 3. Corrections reference an existing event from the SAME source system.
+  // That (sourceSystem, sourceEventId) match is also the tenant check: a
+  // partner may only correct facts it originally produced.
   let correctionForEventId: string | null = null;
+  let correctionTarget: { id: string; donationId: string | null; componentId: string | null } | null = null;
   if (event.correction_of_source_event_id) {
     const target = await prisma.lifecycleEvent.findFirst({
       where: { sourceSystem: ctx.sourceSystem, sourceEventId: event.correction_of_source_event_id },
-      select: { id: true },
+      select: { id: true, donationId: true, componentId: true },
     });
     if (!target) throw new UnresolvableIdentifierError("correction target not found");
     correctionForEventId = target.id;
+    correctionTarget = target;
   }
 
   // ---- 4. Destination facility resolution for transfers (fail-safe to PENDING).
@@ -104,7 +79,7 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
   let facilityId: string | null = null;
   let verificationStatus: "VERIFIED" | "PENDING" = event.verification_status === "PENDING" ? "PENDING" : "VERIFIED";
   const destCode = (meta["destination_facility_code"] as string | undefined) ?? null;
-  if (destCode) {
+  if (destCode && event.event_type !== "EVENT_CORRECTION") {
     const dests = await prisma.facility.findMany({
       where: { externalCode: destCode, organization: { status: "ACTIVE" } },
       select: { id: true, organizationId: true },
@@ -127,25 +102,82 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
     facilityId = f?.id ?? null;
   }
 
+  // ---- 4b. Resolve target with tenant scoping (PI-9).
+  const occurredAt = new Date(event.occurred_at);
+  let donationId: string | null = null;
+  let componentId: string | null = null;
+  let donorUserId: string | null = null;
+
+  if (event.event_type === "EVENT_CORRECTION") {
+    // A correction attaches to whatever the corrected fact attached to — the
+    // same-sourceSystem target match above is the authorization. (Routing
+    // corrections through ordinary identifier resolution would trap hospital
+    // corrections behind the foreign-donation tenant rule.)
+    if (!correctionTarget) throw new UnresolvableIdentifierError("correction target not found");
+    donationId = correctionTarget.donationId;
+    componentId = correctionTarget.componentId;
+  } else if (event.event_type.startsWith("COMPONENT_")) {
+    const component = await resolveComponentForPartner(
+      event.component_identifier ?? null,
+      event.identifier_scheme,
+      event.donation_identifier ?? null,
+      event.facility_code ?? null,
+      ctx
+    );
+    componentId = component.id;
+    donationId = component.donationId;
+    donorUserId = component.donorUserId;
+  } else {
+    const donation = await resolveDonationForPartner(
+      event.donation_identifier ?? null,
+      event.identifier_scheme,
+      ctx
+    );
+    donationId = donation.id;
+    donorUserId = donation.donorUserId;
+  }
+
+  if (!donorUserId) {
+    donorUserId = donationId
+      ? (
+          await prisma.donation.findUnique({
+            where: { id: donationId },
+            select: { donorProfile: { select: { userId: true } } },
+          })
+        )?.donorProfile?.userId ?? null
+      : null;
+  }
+
   // ---- 5. Append-only write (race-safe idempotency).
   let created;
   try {
-    created = await prisma.lifecycleEvent.create({
-      data: {
-        donationId,
-        componentId,
-        eventType: event.event_type,
-        organizationId: ctx.organizationId,
-        facilityId,
-        occurredAt,
-        sourceSystem: ctx.sourceSystem,
-        sourceEventId: event.external_event_id,
-        verificationStatus,
-        payloadJson: Object.keys(meta).length ? JSON.stringify(meta) : null,
-        correctionForEventId,
-        integrationId: ctx.integrationId ?? null,
-        ingestedByUserId: ctx.ingestedByUserId ?? null,
-      },
+    created = await prisma.$transaction(async (tx) => {
+      const row = await tx.lifecycleEvent.create({
+        data: {
+          donationId,
+          componentId,
+          eventType: event.event_type,
+          organizationId: ctx.organizationId,
+          facilityId,
+          occurredAt,
+          sourceSystem: ctx.sourceSystem,
+          sourceEventId: event.external_event_id,
+          verificationStatus,
+          payloadJson: Object.keys(meta).length ? JSON.stringify(meta) : null,
+          correctionForEventId,
+          integrationId: ctx.integrationId ?? null,
+          ingestedByUserId: ctx.ingestedByUserId ?? null,
+        },
+      });
+      // A correction supersedes its target everywhere donor-facing; both rows
+      // remain queryable for audit (integration-guide.md).
+      if (correctionForEventId) {
+        await tx.lifecycleEvent.update({
+          where: { id: correctionForEventId },
+          data: { supersededByCorrection: true },
+        });
+      }
+      return row;
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -163,11 +195,30 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
 
   // ---- 7. Recipient context + consent + privacy decision (transfusions only).
   let grantedLevel: string | null = null;
-  if (event.event_type === "COMPONENT_TRANSFUSED" && event.disclosure) {
-    grantedLevel = await recordRecipientContextAndDecide(created.id, componentId!, event.disclosure, donorUserId, {
-      relatedDonationId: donationId,
-      relatedComponentId: componentId,
+  let notificationCreated = false;
+  if (
+    event.event_type === "COMPONENT_TRANSFUSED" &&
+    verificationStatus !== "VERIFIED"
+  ) {
+    // PI-6: pending facts drive nothing. A PENDING transfusion must never
+    // produce a disclosure decision or a donor notification — it renders as
+    // awaiting verification until a verified replacement event arrives.
+    await recordAudit({
+      actorType: "SYSTEM", action: "disclosure.skipped_unverified", resourceType: "LifecycleEvent",
+      resourceId: created.id, orgId: ctx.organizationId,
+      metadata: { eventType: event.event_type, verificationStatus },
     });
+  } else if (event.event_type === "COMPONENT_TRANSFUSED" && event.disclosure) {
+    const outcome = await recordRecipientContextAndDecide(
+      created.id,
+      componentId!,
+      event.disclosure,
+      donorUserId,
+      ctx.organizationId,
+      { relatedDonationId: donationId, relatedComponentId: componentId }
+    );
+    grantedLevel = outcome.grantedLevel;
+    notificationCreated = outcome.notified;
   } else if (event.event_type === "COMPONENT_TRANSFUSED" && donorUserId) {
     // Verified transfusion always notifies (generic LEVEL-0 message).
     await dispatchDonorNotification({
@@ -179,6 +230,7 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
       relatedDonationId: donationId,
       relatedComponentId: componentId,
     });
+    notificationCreated = true;
     await recordAudit({
       actorType: "SYSTEM", action: "disclosure.generated", resourceType: "LifecycleEvent",
       resourceId: created.id, orgId: ctx.organizationId,
@@ -233,7 +285,7 @@ export async function ingestEvent(event: InboundEvent, ctx: IngestContext): Prom
     status: "ACCEPTED",
     lifecycleEventId: created.id,
     disclosureGrantedLevel: grantedLevel,
-    notificationCreated: Boolean(donorUserId),
+    notificationCreated,
   };
 }
 
@@ -357,7 +409,12 @@ async function resolveComponentForPartner(
 
 async function hospitalAuthorizedForComponent(componentId: string, orgId: string): Promise<boolean> {
   const transfers = await prisma.lifecycleEvent.findMany({
-    where: { componentId, eventType: "COMPONENT_TRANSFERRED", verificationStatus: "VERIFIED" },
+    where: {
+      componentId,
+      eventType: "COMPONENT_TRANSFERRED",
+      verificationStatus: "VERIFIED",
+      supersededByCorrection: false,
+    },
     select: { payloadJson: true },
   });
   const myFacilityIds = new Set(
@@ -392,28 +449,40 @@ async function recordRecipientContextAndDecide(
   componentId: string,
   disclosure: NonNullable<InboundEvent["disclosure"]>,
   donorUserId: string | null,
+  verifyingOrganizationId: string,
   rel: { relatedDonationId: string | null; relatedComponentId: string | null }
-): Promise<string | null> {
+): Promise<{ grantedLevel: string | null; notified: boolean }> {
+  // Defense in depth for PI-6: the stored fact itself must be VERIFIED before
+  // any consent record, recipient context, decision or notification is made.
+  const stored = await prisma.lifecycleEvent.findUnique({
+    where: { id: eventId },
+    select: { verificationStatus: true },
+  });
+  if (!stored || stored.verificationStatus !== "VERIFIED") {
+    await recordAudit({
+      actorType: "SYSTEM", action: "disclosure.skipped_unverified", resourceType: "LifecycleEvent",
+      resourceId: eventId, orgId: verifyingOrganizationId,
+      metadata: { verificationStatus: stored?.verificationStatus ?? "MISSING" },
+    });
+    return { grantedLevel: null, notified: false };
+  }
+
   const sanitized = sanitizeRecipientContext({
     level: disclosure.level,
     category: disclosure.category,
     ageBand: disclosure.age_band,
   });
 
-  // Consent ledger: every submission appends the recorded consent state (versioned history).
-  const component = await prisma.bloodComponent.findUnique({
-    where: { id: componentId },
-    select: { donation: { select: { organizationId: true } } },
-  });
-  const orgId = component?.donation.organizationId ?? "";
-
+  // Consent + context attribution: the ORGANIZATION THAT INGESTED the
+  // transfusion (the treating hospital) verifies consent and hosts the
+  // context — never the blood bank that merely owns the donation.
   await prisma.disclosureConsent.create({
     data: {
       recipientRef: disclosure.recipient_ref,
       level: disclosure.level,
       category: sanitized.ok ? sanitized.category : null,
       policyVersion: "1.0",
-      verifiedByOrgId: orgId,
+      verifiedByOrgId: verifyingOrganizationId,
     },
   });
 
@@ -423,7 +492,7 @@ async function recordRecipientContextAndDecide(
       recipientRef: disclosure.recipient_ref,
       componentId,
       eventId,
-      facilityOrgId: orgId,
+      facilityOrgId: verifyingOrganizationId,
       ageBand: sanitized.ok ? sanitized.ageBand : null,
       treatmentCategory: sanitized.ok ? sanitized.category : null,
     },
@@ -431,8 +500,8 @@ async function recordRecipientContextAndDecide(
   });
 
   if (!sanitized.ok || disclosure.level === "NONE") {
-    await persistDecision(eventId, "NONE", "NONE", "privacy.transfusedGeneric", {}, sanitized.ok ? null : sanitized.reason, orgId, null);
-    return "NONE";
+    await persistDecision(eventId, "NONE", "NONE", "privacy.transfusedGeneric", {}, sanitized.ok ? null : sanitized.reason, verifyingOrganizationId, null);
+    return { grantedLevel: "NONE", notified: false };
   }
 
   // Cohort for re-id floor: same category × ageBand × trailing 30 days.
@@ -449,7 +518,7 @@ async function recordRecipientContextAndDecide(
   const decision = decideDisclosure({
     eventType: "COMPONENT_TRANSFUSED",
     componentType: (await prisma.bloodComponent.findUnique({ where: { id: componentId }, select: { componentType: true } }))?.componentType ?? null,
-    verificationStatus: "VERIFIED",
+    verificationStatus: stored.verificationStatus as VerificationStatus,
     consent: {
       level: disclosure.level,
       category: sanitized.category,
@@ -461,7 +530,7 @@ async function recordRecipientContextAndDecide(
     cohortSize,
   });
 
-  await persistDecision(eventId, disclosure.level, decision.grantedLevel, decision.messageKey, decision.params, decision.degradedReason, orgId, cohortSize);
+  await persistDecision(eventId, disclosure.level, decision.grantedLevel, decision.messageKey, decision.params, decision.degradedReason, verifyingOrganizationId, cohortSize);
 
   if (donorUserId && decision.messageKey) {
     const pref = await prisma.notificationPreference.findUnique({ where: { userId: donorUserId } });
@@ -476,8 +545,9 @@ async function recordRecipientContextAndDecide(
       relatedDonationId: rel.relatedDonationId,
       relatedComponentId: rel.relatedComponentId,
     });
+    return { grantedLevel: decision.grantedLevel, notified: true };
   }
-  return decision.grantedLevel;
+  return { grantedLevel: decision.grantedLevel, notified: false };
 }
 
 async function persistDecision(

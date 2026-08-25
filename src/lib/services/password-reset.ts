@@ -10,6 +10,7 @@ import { hashPassword, passwordIssues } from "@/lib/auth/passwords";
 import { recordAudit } from "@/lib/audit";
 import { rateLimitPersistent } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
+import { enqueueEmailWithImmediateDelivery } from "@/packages/notifications/outbox-worker";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 const REQUEST_WINDOW_MS = 15 * 60_000;
@@ -37,21 +38,18 @@ export async function requestPasswordReset(email: string, ipHash?: string | null
       },
     });
     const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-    // Queued into the outbox and delivered by the worker (Resend/console).
-    await prisma.outboxEmail.create({
-      data: {
-        toEmail: normalized,
-        subject: "Reset your RaktSetu password",
-        bodyText: [
-          `Hi ${user.displayName},`,
-          "",
-          "Someone requested a password reset for your RaktSetu account.",
-          `If this was you, open this link within one hour: ${resetUrl}`,
-          "",
-          "If you did not request this, you can safely ignore this email.",
-        ].join("\n"),
-        status: "QUEUED",
-      },
+    // Delivered inline; the outbox row exists only so the worker can retry.
+    await enqueueEmailWithImmediateDelivery({
+      toEmail: normalized,
+      subject: "Reset your RaktSetu password",
+      bodyText: [
+        `Hi ${user.displayName},`,
+        "",
+        "Someone requested a password reset for your RaktSetu account.",
+        `If this was you, open this link within one hour: ${resetUrl}`,
+        "",
+        "If you did not request this, you can safely ignore this email.",
+      ].join("\n"),
     });
     await recordAudit({
       actorType: "SYSTEM",

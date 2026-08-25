@@ -18,6 +18,45 @@ export interface OutboxRunSummary {
   skippedExpired: number;
 }
 
+/**
+ * Auth-critical mail (verification, password reset) must reach the user NOW —
+ * it is delivered inline at enqueue time. The row still lands in the outbox
+ * first, so a failed inline attempt stays QUEUED and the worker (cron /
+ * outbox:process) acts purely as retry/recovery.
+ */
+export async function enqueueEmailWithImmediateDelivery(input: {
+  toEmail: string;
+  subject: string;
+  bodyText: string;
+}): Promise<void> {
+  const row = await prisma.outboxEmail.create({
+    data: {
+      toEmail: input.toEmail,
+      subject: input.subject,
+      bodyText: input.bodyText,
+      status: "QUEUED",
+    },
+  });
+
+  const sender = resolveEmailSender();
+  const result = await sender.send({
+    to: input.toEmail,
+    subject: input.subject,
+    text: input.bodyText,
+  });
+  if (result.ok) {
+    await prisma.outboxEmail.update({
+      where: { id: row.id },
+      data: { status: "SENT", sentAt: new Date() },
+    });
+    return;
+  }
+  // Leave QUEUED — the outbox worker retries on its next run.
+  console.error(
+    JSON.stringify({ level: "error", msg: "outbox_inline_send_failed", reason: result.error })
+  );
+}
+
 export async function processOutbox(limit = BATCH_LIMIT): Promise<OutboxRunSummary> {
   const summary: OutboxRunSummary = { processed: 0, sent: 0, failed: 0, skippedExpired: 0 };
   const sender = resolveEmailSender();
