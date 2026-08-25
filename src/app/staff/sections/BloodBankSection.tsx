@@ -6,6 +6,7 @@ import { CompleteProcessingForm } from "../components/CompleteProcessingForm";
 import { CreateComponentsForm } from "../components/CreateComponentsForm";
 import { TransferComponentForm } from "../components/TransferComponentForm";
 import { MarkComponentTerminalForm } from "../components/MarkComponentTerminalForm";
+import { StepCard } from "../components/StepCard";
 
 /** Blood-bank operations panel — org kind BLOOD_BANK or BLOOD_BANK_AND_HOSPITAL. */
 export async function BloodBankSection({ organizationId }: { organizationId: string }) {
@@ -96,17 +97,34 @@ export async function BloodBankSection({ organizationId }: { organizationId: str
       <h2 id="bb-panel-heading" className="text-xl font-bold tracking-tight text-ink">
         {d.staff.panelBloodBank}
       </h2>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <RecordDonationForm organizationId={organizationId} facilities={facilityOptions} />
-        <CompleteProcessingForm organizationId={organizationId} donations={donationOptions} />
-        <CreateComponentsForm
-          organizationId={organizationId}
-          donations={donationOptions}
-          componentTypes={componentTypeOptions}
-        />
-        <TransferComponentForm organizationId={organizationId} components={transferOptions} />
-        <MarkComponentTerminalForm organizationId={organizationId} components={terminalOptions} kind="expired" />
-        <MarkComponentTerminalForm organizationId={organizationId} components={terminalOptions} kind="discarded" />
+      <div className="space-y-5 xl:columns-2 xl:gap-5">
+        <StepCard n={1} title={d.staff.stepRecordTitle} hint={d.staff.stepRecordHint}>
+          <RecordDonationForm organizationId={organizationId} facilities={facilityOptions} />
+        </StepCard>
+        <StepCard n={2} title={d.staff.stepProcessTitle} hint={d.staff.stepProcessHint}>
+          <CompleteProcessingForm organizationId={organizationId} donations={donationOptions} />
+        </StepCard>
+        <StepCard n={3} title={d.staff.stepComponentsTitle} hint={d.staff.stepComponentsHint}>
+          <CreateComponentsForm
+            organizationId={organizationId}
+            donations={donationOptions}
+            componentTypes={componentTypeOptions}
+          />
+        </StepCard>
+        <StepCard n={4} title={d.staff.stepTransferTitle} hint={d.staff.stepTransferHint}>
+          <TransferComponentForm organizationId={organizationId} components={transferOptions} />
+        </StepCard>
+      </div>
+      <div className="space-y-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint">
+          {d.staff.stepExceptionsLabel}
+        </p>
+        <StepCard n={5} optional title={d.staff.stepTerminalTitle} hint={d.staff.stepTerminalHint}>
+          <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-2">
+            <MarkComponentTerminalForm organizationId={organizationId} components={terminalOptions} kind="expired" />
+            <MarkComponentTerminalForm organizationId={organizationId} components={terminalOptions} kind="discarded" />
+          </div>
+        </StepCard>
       </div>
     </section>
   );

@@ -8,6 +8,7 @@ import {
   ReturnForm,
   TransfuseForm,
 } from "../components/HospitalForms";
+import { StepCard } from "../components/StepCard";
 
 interface ComponentRow {
   id: string;
@@ -130,18 +131,33 @@ export async function HospitalSection({ organizationId }: { organizationId: stri
       <h2 id="hosp-panel-heading" className="text-xl font-bold tracking-tight text-ink">
         {d.staff.panelHospital}
       </h2>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <ReceiveForm organizationId={organizationId} incoming={incomingOptions} />
-        <IssueForm organizationId={organizationId} units={unitOptions} />
-        <ReturnForm organizationId={organizationId} units={unitOptions} />
-        <DiscardUnitForm organizationId={organizationId} units={unitOptions} />
-        <TransfuseForm
-          organizationId={organizationId}
-          units={unitOptions}
-          levels={levels}
-          categories={categories}
-          ageBands={ageBands}
-        />
+      <div className="space-y-5 xl:columns-2 xl:gap-5">
+        <StepCard n={1} title={d.staff.stepReceiveTitle} hint={d.staff.stepReceiveHint}>
+          <ReceiveForm organizationId={organizationId} incoming={incomingOptions} />
+        </StepCard>
+        <StepCard n={2} title={d.staff.stepIssueTitle} hint={d.staff.stepIssueHint}>
+          <IssueForm organizationId={organizationId} units={unitOptions} />
+        </StepCard>
+        <StepCard n={3} title={d.staff.stepTransfuseTitle} hint={d.staff.stepTransfuseHint}>
+          <TransfuseForm
+            organizationId={organizationId}
+            units={unitOptions}
+            levels={levels}
+            categories={categories}
+            ageBands={ageBands}
+          />
+        </StepCard>
+      </div>
+      <div className="space-y-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint">
+          {d.staff.stepExceptionsLabel}
+        </p>
+        <StepCard n={4} optional title={d.staff.stepReturnDiscardTitle} hint={d.staff.stepReturnDiscardHint}>
+          <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-2">
+            <ReturnForm organizationId={organizationId} units={unitOptions} />
+            <DiscardUnitForm organizationId={organizationId} units={unitOptions} />
+          </div>
+        </StepCard>
       </div>
     </section>
   );
