@@ -117,6 +117,23 @@ model OrganizationUser {
   @@unique([orgId, userId])
 }
 
+// Inbound partner onboarding requests (public form) — reviewed by platform admins.
+model PartnerRequest {
+  id          String   @id @default(uuid())
+  orgName     String
+  orgKind     String // BLOOD_BANK | HOSPITAL | NGO
+  contactName String
+  workEmail   String
+  city        String?
+  state       String?
+  message     String?
+  status      String   @default("PENDING") // PENDING | REVIEWED | APPROVED | REJECTED
+  ipHash      String?
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
 // ---------------------------------------------------------------------------
 // Donations, identifiers, components, lineage
 // ---------------------------------------------------------------------------
