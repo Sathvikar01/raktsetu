@@ -4,14 +4,16 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 disabled:pointer-events-none disabled:opacity-60 focus-visible:shadow-lift active:translate-y-px";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-700",
+  primary:
+    "bg-teal-600 text-white shadow-card hover:bg-teal-700 hover:shadow-lift active:bg-teal-700",
   secondary:
-    "border border-teal-600/30 bg-white text-teal-700 hover:border-teal-600/60 hover:bg-teal-50",
+    "border border-teal-600/30 bg-white text-teal-700 shadow-card hover:border-teal-600/60 hover:bg-teal-50 hover:shadow-lift",
   ghost: "text-teal-700 hover:bg-teal-50",
-  danger: "bg-crimson-600 text-white hover:bg-crimson-700 active:bg-crimson-700",
+  danger:
+    "bg-crimson-600 text-white shadow-card hover:bg-crimson-700 hover:shadow-lift active:bg-crimson-700",
 };
 
 const SIZES: Record<ButtonSize, string> = {

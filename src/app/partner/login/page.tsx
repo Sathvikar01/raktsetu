@@ -43,7 +43,7 @@ export default async function PartnerLoginPage({
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-xl2 border border-ink/5 bg-white shadow-lift lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-ink/5 bg-white shadow-lift lg:grid-cols-[1.05fr_1fr]">
         {/* Brand / trust panel */}
         <aside className="relative hidden flex-col justify-between overflow-hidden bg-teal-700 p-10 text-white lg:flex">
           <div
@@ -59,7 +59,7 @@ export default async function PartnerLoginPage({
               <Building2 className="size-3.5" aria-hidden />
               {t.badge}
             </span>
-            <h2 className="mt-6 max-w-sm text-2xl font-bold leading-snug tracking-tight">
+            <h2 className="font-display mt-6 max-w-sm text-2xl font-semibold leading-snug tracking-tight">
               {t.panelTitle}
             </h2>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/80">{t.panelBody}</p>
@@ -95,7 +95,7 @@ export default async function PartnerLoginPage({
             </span>
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-ink">{t.title}</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">{t.title}</h1>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{t.subtitle}</p>
 
           {errorMessage ? (
@@ -177,7 +177,7 @@ export default async function PartnerLoginPage({
               <span className="mx-1.5 text-ink-faint">·</span>
               <Link
                 href="/partners"
-                className="rounded font-medium text-teal-700 underline-offset-4 hover:text-teal-600 hover:underline focus-visible:underline"
+                className="rounded-lg font-medium text-teal-700 underline-offset-4 hover:text-teal-600 hover:underline focus-visible:underline"
               >
                 {t.aboutProgramme}
               </Link>

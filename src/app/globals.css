@@ -17,7 +17,7 @@
 
 @layer components {
   .rs-card {
-    @apply rounded-xl2 border border-ink/5 bg-white shadow-card;
+    @apply rounded-2xl border border-ink/5 bg-white shadow-card;
   }
   .rs-input {
     @apply w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50;
@@ -25,13 +25,44 @@
   .rs-label {
     @apply mb-1 block text-sm font-medium text-ink;
   }
-  .rs-error {
-    @apply mt-1 text-sm text-crimson-600;
+}
+
+/* Entrance motion — opt-in, reduced-motion safe */
+@keyframes rs-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rs-reveal {
+  animation: rs-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rs-reveal-1 { animation-delay: 0.05s; }
+.rs-reveal-2 { animation-delay: 0.12s; }
+.rs-reveal-3 { animation-delay: 0.2s; }
+.rs-reveal-4 { animation-delay: 0.28s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-reveal,
+  .rs-reveal-1,
+  .rs-reveal-2,
+  .rs-reveal-3,
+  .rs-reveal-4 {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 
 /* Visible focus for keyboard users everywhere */
 :focus-visible {
-  outline: 2px solid #1f7a6d;
+  outline: 2px solid theme(colors.teal.500);
   outline-offset: 2px;
 }

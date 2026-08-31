@@ -48,7 +48,7 @@ export default async function AdminPage({
   if (orgs.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{d.admin.portalTitle}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{d.admin.portalTitle}</h1>
         <EmptyState title={d.admin.noOrgs} />
       </div>
     );
@@ -110,7 +110,7 @@ export default async function AdminPage({
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{d.admin.portalTitle}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{d.admin.portalTitle}</h1>
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink-soft">{d.admin.portalSubtitle}</p>
       </div>
 
@@ -123,7 +123,7 @@ export default async function AdminPage({
                 <Link
                   href={`/admin?org=${org.id}`}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col gap-1 rounded-xl2 border px-4 py-3 text-sm transition-colors ${
+                  className={`flex flex-col gap-1 rounded-2xl border px-4 py-3 text-sm transition-colors ${
                     active
                       ? "border-teal-600/50 bg-teal-50 text-teal-800"
                       : "border-ink/10 bg-white text-ink-soft hover:border-teal-600/30 hover:text-ink"
@@ -171,7 +171,7 @@ export default async function AdminPage({
           <p className="text-sm text-ink-soft">{d.admin.auditNote}</p>
 
           {/* GET filter form — works without client JS */}
-          <form method="get" action="/admin" className="grid gap-3 rounded-xl2 border border-ink/10 bg-white px-4 py-4 sm:grid-cols-[1fr_minmax(0,9rem)_1fr_auto] sm:items-end">
+          <form method="get" action="/admin" className="grid gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-4 sm:grid-cols-[1fr_minmax(0,9rem)_1fr_auto] sm:items-end">
             <input type="hidden" name="org" value={selected.id} />
             <div>
               <label htmlFor="audit-q" className="mb-1 block text-sm font-medium text-ink">

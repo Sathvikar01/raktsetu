@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, Copy, Check } from "lucide-react";
+import { buttonClasses } from "@/packages/ui";
 
 /**
  * Client-side export delivery: the server renders the page with the full
@@ -36,19 +37,11 @@ export function DownloadButton({ data }: { data: unknown }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        onClick={download}
-        className="inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-teal-600"
-      >
+      <button type="button" onClick={download} className={buttonClasses("primary", "sm")}>
         <Download className="size-4" aria-hidden />
         Download JSON
       </button>
-      <button
-        type="button"
-        onClick={copy}
-        className="inline-flex items-center gap-2 rounded-lg border border-ink/15 bg-white px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-teal-600"
-      >
+      <button type="button" onClick={copy} className={buttonClasses("secondary", "sm")}>
         {copied ? (
           <Check className="size-4 text-teal-700" aria-hidden />
         ) : (

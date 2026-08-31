@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Card, CardBody, CardHeader, Input, Label } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { transferComponentAction } from "../actions";
 import type { ComponentOption, OpsActionState } from "../types";
@@ -52,10 +52,7 @@ export function TransferComponentForm({
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
-          >
+          <button type="submit" className={buttonClasses("primary")}>
             {d.staff.transferComponent}
           </button>
         </form>

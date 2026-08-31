@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Card, CardBody, CardHeader, Label, Select } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { completeProcessingAction } from "../actions";
 import type { DonationOption, OpsActionState } from "../types";
@@ -47,7 +47,7 @@ export function CompleteProcessingForm({
 
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
+            className={buttonClasses("primary")}
           >
             {d.common.submit}
           </button>

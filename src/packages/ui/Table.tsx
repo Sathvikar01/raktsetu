@@ -13,7 +13,7 @@ export function Table({ children, caption }: { children: ReactNode; caption?: st
 
 export function THead({ children }: { children: ReactNode }) {
   return (
-    <thead className="border-b border-ink/10 bg-canvas/60">
+    <thead className="sticky top-16 z-10 border-b border-ink/10 bg-canvas/95 backdrop-blur">
       <tr>{children}</tr>
     </thead>
   );
@@ -35,7 +35,7 @@ export function TBody({ children }: { children: ReactNode }) {
 }
 
 export function TR({ children }: { children: ReactNode }) {
-  return <tr className="align-top">{children}</tr>;
+  return <tr className="align-top transition-colors hover:bg-teal-50/40">{children}</tr>;
 }
 
 export function TD({ children, className }: { children: ReactNode; className?: string }) {

@@ -19,7 +19,7 @@ export function StepCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl2 border border-ink/5 bg-white shadow-card">
+    <section className="rounded-2xl border border-ink/5 bg-white shadow-card">
       <div className="flex items-start gap-3 border-b border-ink/5 px-4 py-3 sm:px-5">
         <span
           aria-hidden

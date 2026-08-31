@@ -65,7 +65,7 @@ export default async function StaffPage({
   if (orgs.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{d.staff.portalTitle}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{d.staff.portalTitle}</h1>
         <EmptyState title={d.staff.noOrgs} />
       </div>
     );
@@ -77,7 +77,7 @@ export default async function StaffPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{d.staff.portalTitle}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{d.staff.portalTitle}</h1>
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink-soft">{d.staff.portalSubtitle}</p>
       </div>
 
@@ -90,7 +90,7 @@ export default async function StaffPage({
                 <Link
                   href={`/staff?org=${org.id}`}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col gap-1 rounded-xl2 border px-4 py-3 text-sm transition-colors ${
+                  className={`flex flex-col gap-1 rounded-2xl border px-4 py-3 text-sm transition-colors ${
                     active
                       ? "border-teal-600/50 bg-teal-50 text-teal-800"
                       : "border-ink/10 bg-white text-ink-soft hover:border-teal-600/30 hover:text-ink"

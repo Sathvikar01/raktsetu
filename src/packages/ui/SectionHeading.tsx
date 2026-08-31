@@ -32,7 +32,7 @@ export function SectionHeading({
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">{kicker}</p>
       ) : null}
       <Tag
-        className={`mt-2 font-bold tracking-tight text-ink ${
+        className={`mt-2 font-display font-semibold tracking-tight text-ink ${
           headingLevel === "h1" ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl"
         }`}
       >

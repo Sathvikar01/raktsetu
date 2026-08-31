@@ -10,7 +10,7 @@ export default function NotFoundPage() {
       <p aria-hidden className="text-7xl font-bold text-teal-100">
         404
       </p>
-      <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink">{d.common.notFoundTitle}</h1>
+      <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-ink">{d.common.notFoundTitle}</h1>
       <p className="mt-3 leading-relaxed text-ink-soft">{d.common.notFoundBody}</p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link href="/" className={buttonClasses("primary", "md")}>

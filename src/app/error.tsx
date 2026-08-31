@@ -23,7 +23,7 @@ export default function ErrorPage({
       <p aria-hidden className="text-6xl font-bold text-teal-100">
         :((
       </p>
-      <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink">{d.common.errorTitle}</h1>
+      <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-ink">{d.common.errorTitle}</h1>
       <p className="mt-3 leading-relaxed text-ink-soft">{d.common.errorBody}</p>
       <div className="mt-6 w-full">
         <Alert type="info">

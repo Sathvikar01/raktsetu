@@ -65,7 +65,7 @@ export function IntegrationsPanel({
     <div className="space-y-4">
       {/* Shown-once secret response (create/rotate). Never rendered from server data. */}
       {secretOnce ? (
-        <div role="alert" className="space-y-3 rounded-xl2 border border-amber-600/30 bg-amber-50 px-4 py-4">
+        <div role="alert" className="space-y-3 rounded-2xl border border-amber-600/30 bg-amber-50 px-4 py-4">
           <p className="font-semibold text-amber-900">{d.admin.rotateDoneTitle}</p>
           <div className="flex flex-wrap items-center gap-2 text-sm text-amber-900">
             <span className="font-medium">{d.admin.colKeyId}:</span>

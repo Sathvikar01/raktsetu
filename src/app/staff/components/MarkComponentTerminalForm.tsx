@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { markComponentDiscardedAction, markComponentExpiredAction } from "../actions";
 import type { ComponentOption, OpsActionState } from "../types";
@@ -54,10 +54,7 @@ export function MarkComponentTerminalForm({
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-lg border border-teal-600/30 bg-white px-5 py-2.5 text-sm font-medium text-teal-700 transition-colors hover:border-teal-600/60 hover:bg-teal-50 disabled:pointer-events-none disabled:opacity-60"
-          >
+          <button type="submit" className={buttonClasses("secondary")}>
             {title}
           </button>
         </form>

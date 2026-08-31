@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BarChart3, Microscope, ShieldCheck } from "lucide-react";
 import { getCommunityStats } from "@/lib/services/stats";
-import { DEFAULT_LOCALE, getDictionary } from "@/i18n";
+import { getDictionary } from "@/i18n";
 import {
   Alert,
   BarChart,
@@ -20,7 +20,6 @@ export function generateMetadata(): Metadata {
 export default async function CommunityImpactPage() {
   const d = getDictionary();
   const stats = await getCommunityStats();
-  const fmt = new Intl.NumberFormat(DEFAULT_LOCALE);
 
   const hasAny =
     stats.donationsTracked > 0 ||
@@ -39,17 +38,11 @@ export default async function CommunityImpactPage() {
       <div className="mt-12">
         {hasAny ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <StatTile value={fmt.format(stats.donationsTracked)} label={d.public.statsDonations} />
-            <StatTile
-              value={fmt.format(stats.componentsProcessed)}
-              label={d.public.statsComponents}
-            />
-            <StatTile
-              value={fmt.format(stats.transfusionEvents)}
-              label={d.public.statsTransfusions}
-            />
-            <StatTile value={fmt.format(stats.bloodCentres)} label={d.public.statsCentres} />
-            <StatTile value={fmt.format(stats.hospitals)} label={d.public.statsHospitals} />
+            <StatTile value={stats.donationsTracked} label={d.public.statsDonations} />
+            <StatTile value={stats.componentsProcessed} label={d.public.statsComponents} />
+            <StatTile value={stats.transfusionEvents} label={d.public.statsTransfusions} />
+            <StatTile value={stats.bloodCentres} label={d.public.statsCentres} />
+            <StatTile value={stats.hospitals} label={d.public.statsHospitals} />
           </div>
         ) : (
           <EmptyState icon={BarChart3} title={d.public.statsEmpty} body={d.public.impactEmpty} />

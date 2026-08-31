@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   Alert,
+  buttonClasses,
   Card,
   CardBody,
   CardHeader,
@@ -90,7 +91,7 @@ function HospitalSimpleForm({
 
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
+            className={buttonClasses("primary")}
           >
             {submitLabel}
           </button>
@@ -205,7 +206,7 @@ export function TransfuseForm({
           />
 
           {/* Disclosure sub-form */}
-          <fieldset className="space-y-4 rounded-xl2 border border-ink/10 bg-canvas/60 px-4 py-4">
+          <fieldset className="space-y-4 rounded-2xl border border-ink/10 bg-canvas/60 px-4 py-4">
             <legend className="px-1 text-sm font-semibold text-ink">{d.staff.disclosureHeading}</legend>
 
             <div className="grid gap-4 sm:grid-cols-2">

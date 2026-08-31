@@ -3,8 +3,6 @@ import { DEFAULT_LOCALE, getDictionary } from "@/i18n";
 import { StatTile } from "@/packages/ui";
 import Link from "next/link";
 
-const formatter = new Intl.NumberFormat(DEFAULT_LOCALE);
-
 export async function CommunityStatsTeaser() {
   const d = getDictionary();
   const stats = await getCommunityStats();
@@ -14,15 +12,9 @@ export async function CommunityStatsTeaser() {
   return (
     <div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile value={formatter.format(stats.donationsTracked)} label={d.public.statsDonations} />
-        <StatTile
-          value={formatter.format(stats.componentsProcessed)}
-          label={d.public.statsComponents}
-        />
-        <StatTile
-          value={formatter.format(stats.transfusionEvents)}
-          label={d.public.statsTransfusions}
-        />
+        <StatTile value={stats.donationsTracked} label={d.public.statsDonations} />
+        <StatTile value={stats.componentsProcessed} label={d.public.statsComponents} />
+        <StatTile value={stats.transfusionEvents} label={d.public.statsTransfusions} />
       </div>
       <p className="mt-6 text-center">
         <Link

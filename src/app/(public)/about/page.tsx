@@ -102,7 +102,7 @@ export default function AboutPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-teal-600">
             {d.public.aboutCreatorKicker}
           </p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-ink">
+          <h2 className="font-display mt-2 text-2xl font-semibold tracking-tight text-ink">
             {d.public.aboutCreatorTitle}
           </h2>
           <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] items-start">

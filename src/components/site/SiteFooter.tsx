@@ -18,9 +18,9 @@ export function SiteFooter() {
     {
       title: d.nav.footerProject,
       links: [
-        { href: "/about", label: d.nav.about },
         { href: "/developers", label: d.nav.developers },
         { href: "/open-source", label: d.nav.openSource },
+        { href: "/partners", label: d.nav.partners },
       ],
     },
     {
@@ -54,7 +54,7 @@ export function SiteFooter() {
                   <li key={`${col.title}-${l.href}`}>
                     <Link
                       href={l.href}
-                      className="rounded text-sm text-ink-soft transition-colors hover:text-teal-700"
+                      className="rounded-lg px-1 text-sm text-ink-soft transition-colors hover:text-teal-700"
                     >
                       {l.label}
                     </Link>

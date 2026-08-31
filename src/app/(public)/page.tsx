@@ -4,8 +4,10 @@ import { getDictionary } from "@/i18n";
 import { buttonClasses } from "@/packages/ui";
 import { Card, CardBody, CardHeader } from "@/packages/ui";
 import { SectionHeading } from "@/packages/ui";
-import { Stepper, Timeline } from "@/packages/ui";
+import { Timeline } from "@/packages/ui";
 import { CommunityStatsTeaser } from "@/components/site/CommunityStatsTeaser";
+import { CyclingStepper } from "@/components/site/CyclingStepper";
+import { Reveal } from "@/components/site/Reveal";
 
 function flowSteps(): Array<{ label: string }> {
   const d = getDictionary();
@@ -32,32 +34,30 @@ export default function LandingPage() {
         />
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:pb-24 lg:pt-20">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
+            <p className="rs-reveal text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
               {d.public.heroKicker}
             </p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">
+            <h1 className="rs-reveal rs-reveal-1 mt-4 font-display text-4xl font-semibold leading-[1.1] tracking-tight text-ink sm:text-5xl">
               {d.public.heroTitle1}
               <br />
               <span className="text-teal-700">{d.public.heroTitle2}</span>
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-soft">{d.public.heroBody}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/how-it-works#demo" className={buttonClasses("primary", "lg")}>
+            <p className="rs-reveal rs-reveal-2 mt-5 max-w-xl text-lg leading-relaxed text-ink-soft">
+              {d.public.heroBody}
+            </p>
+            <div className="rs-reveal rs-reveal-3 mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/how-it-works#demo" className={`group ${buttonClasses("primary", "lg")}`}>
                 {d.public.ctaDemo}
-                <ArrowRight className="size-4" aria-hidden />
+                <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
               </Link>
               <Link href="/how-it-works" className={buttonClasses("secondary", "lg")}>
                 {d.public.ctaHow}
               </Link>
             </div>
           </div>
-          <Card aria-hidden className="hidden lg:block">
+          <Card aria-hidden className="rs-reveal rs-reveal-2 hidden lg:block">
             <CardBody className="space-y-6 py-8">
-              <Stepper
-                steps={flowSteps()}
-                current={0}
-                ariaLabel={d.public.heroFlowLabel}
-              />
+              <CyclingStepper steps={flowSteps()} ariaLabel={d.public.heroFlowLabel} />
             </CardBody>
             <CardBody className="border-t border-ink/5 bg-canvas/50">
               <p className="flex items-start gap-3 text-sm leading-relaxed text-ink-soft">
@@ -78,7 +78,8 @@ export default function LandingPage() {
           body={d.public.showcaseIntro}
         />
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start">
-          <Card>
+          <Reveal>
+            <Card>
             <CardHeader>
               <p className="text-sm font-semibold text-ink">{d.public.showcaseJourneyLabel}</p>
             </CardHeader>
@@ -99,6 +100,8 @@ export default function LandingPage() {
               </div>
             </CardBody>
           </Card>
+          </Reveal>
+          <Reveal delay={0.1}>
           <div className="space-y-6">
             <h3 className="text-xl font-semibold tracking-tight text-ink">
               {d.public.showcaseWhyTitle}
@@ -117,19 +120,21 @@ export default function LandingPage() {
               <ArrowRight className="size-4" aria-hidden />
             </Link>
           </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Flow strip */}
       <section aria-label={d.public.heroFlowLabel} className="border-y border-ink/5 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:hidden">
-          <Stepper steps={flowSteps()} current={0} ariaLabel={d.public.heroFlowLabel} />
+          <CyclingStepper steps={flowSteps()} ariaLabel={d.public.heroFlowLabel} />
         </div>
       </section>
 
       {/* Privacy + verified claims */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
         <div className="grid gap-6 md:grid-cols-2">
+          <Reveal>
           <Card>
             <CardBody>
               <span className="inline-flex size-11 items-center justify-center rounded-full bg-teal-50 text-teal-700">
@@ -148,6 +153,8 @@ export default function LandingPage() {
               </Link>
             </CardBody>
           </Card>
+          </Reveal>
+          <Reveal delay={0.1}>
           <Card>
             <CardBody>
               <span className="inline-flex size-11 items-center justify-center rounded-full bg-crimson-50 text-crimson-600">
@@ -166,6 +173,7 @@ export default function LandingPage() {
               </Link>
             </CardBody>
           </Card>
+          </Reveal>
         </div>
       </section>
 
@@ -218,6 +226,7 @@ export default function LandingPage() {
 
       {/* Contribution CTA */}
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:py-20">
+        <Reveal>
         <Card className="bg-gradient-to-br from-teal-50 to-canvas">
           <CardBody className="flex flex-col items-center gap-6 py-10 text-center sm:flex-row sm:text-left">
             <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-white text-teal-700 shadow-card">
@@ -241,6 +250,7 @@ export default function LandingPage() {
             </div>
           </CardBody>
         </Card>
+        </Reveal>
       </section>
     </>
   );

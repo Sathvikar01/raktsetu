@@ -15,7 +15,7 @@ export default function PartnerPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-teal-700 ring-1 ring-teal-600/15">
           <Building2 className="size-3.5" aria-hidden /> Hospital & NGO — separate front door
         </span>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           Record a donation. <span className="text-teal-700">Code generates itself.</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-ink-soft">

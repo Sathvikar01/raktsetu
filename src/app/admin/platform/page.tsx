@@ -38,7 +38,7 @@ export default async function PlatformAdminPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{d.admin.platformTitle}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{d.admin.platformTitle}</h1>
         <p className="mt-2 max-w-2xl text-base leading-relaxed text-ink-soft">{d.admin.platformSubtitle}</p>
         <p className="mt-1 text-sm text-ink-faint">{user.email}</p>
       </div>

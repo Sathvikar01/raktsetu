@@ -25,8 +25,8 @@ export function AuthShell({
           <Droplets className="size-7 text-crimson-600" aria-hidden />
           <span className="text-xl">{d.common.appName}</span>
         </Link>
-        <div className="rs-card mt-8 p-6 sm:p-8">
-          <h1 className="text-2xl font-bold tracking-tight text-ink">{title}</h1>
+        <div className="rs-card rs-reveal mt-8 p-6 sm:p-8">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">{title}</h1>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{subtitle}</p>
           <div className="mt-6">{children}</div>
         </div>

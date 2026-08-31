@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
-import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { createIntegrationAction } from "../actions";
 import { ADAPTER_TYPES, type AdminActionState } from "../types";
@@ -74,7 +74,7 @@ export function CreateIntegrationForm({ organizationId }: { organizationId: stri
 
           {/* Shown-once credential response */}
           {state?.ok && state.secretOnce ? (
-            <div role="alert" className="space-y-3 rounded-xl2 border border-amber-600/30 bg-amber-50 px-4 py-4">
+            <div role="alert" className="space-y-3 rounded-2xl border border-amber-600/30 bg-amber-50 px-4 py-4">
               <p className="font-semibold text-amber-900">{d.admin.integrationCreatedTitle}</p>
               <div className="flex flex-wrap items-center gap-2 text-sm text-amber-900">
                 <span className="font-medium">{d.admin.colKeyId}:</span>
@@ -100,7 +100,7 @@ export function CreateIntegrationForm({ organizationId }: { organizationId: stri
 
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
+            className={buttonClasses("primary")}
           >
             {d.admin.createIntegrationSubmit}
           </button>

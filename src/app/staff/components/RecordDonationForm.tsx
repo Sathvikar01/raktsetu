@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { recordDonationAction } from "../actions";
 import type { OpsActionState, OptionItem } from "../types";
@@ -101,10 +101,7 @@ export function RecordDonationForm({
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
-          >
+          <button type="submit" className={buttonClasses("primary")}>
             {d.staff.recordDonation}
           </button>
         </form>

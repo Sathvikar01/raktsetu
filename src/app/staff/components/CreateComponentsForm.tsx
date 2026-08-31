@@ -2,11 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
+import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { createComponentsAction } from "../actions";
 import type { DonationOption, OpsActionState, OptionItem } from "../types";
-import { buttonClasses } from "@/packages/ui";
 
 interface Row {
   type: string;
@@ -116,7 +115,7 @@ export function CreateComponentsForm({
           <div>
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:pointer-events-none disabled:opacity-60"
+              className={buttonClasses("primary")}
             >
               {d.staff.createComponents}
             </button>
