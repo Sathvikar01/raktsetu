@@ -23,11 +23,27 @@ export const metadata: Metadata = {
   description:
     "Open-source, privacy-preserving transparency layer between blood banks, hospitals and blood donors. Follow the verified journey of your donation.",
   alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "RaktSetu",
+    title: "RaktSetu — follow your blood donation's journey",
+    description:
+      "Open-source, privacy-preserving transparency layer between blood banks, hospitals and blood donors.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RaktSetu — follow your blood donation's journey",
+    description:
+      "Open-source, privacy-preserving transparency layer between blood banks, hospitals and blood donors.",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Single light theme color — the app has no dark theme yet, so a dark
+  // entry would tint the browser chrome dark while the page stays light.
   themeColor: "#faf8f6",
 };
 

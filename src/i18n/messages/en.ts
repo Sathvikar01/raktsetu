@@ -2,6 +2,7 @@
 // public | donor | staff | admin | privacy | notifications — add keys under your namespace only.
 const en = {
   common: {
+    portalNavAria: "Portal navigation",
     appName: "RaktSetu",
     tagline: "Transparency without compromising privacy.",
     signIn: "Sign in",
@@ -400,6 +401,13 @@ const en = {
       verifyTitle: "Email verification",
       verifySuccess: "Your email address is verified. Thank you!",
       verifyInvalid: "This verification link is invalid or has expired.",
+    },
+    partnerShell: {
+      portalBadge: "Hospital & NGO Portal",
+      donorSiteLink: "Donor site →",
+      loginCta: "Partner login",
+      footerLine: "Hospital & NGO portal — same privacy guarantees, separate front door.",
+      donorSiteFooter: "Donor site",
     },
     partnerLogin: {
       metaTitle: "Partner sign-in — RaktSetu",

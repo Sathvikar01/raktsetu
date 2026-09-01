@@ -16,7 +16,7 @@ export function PortalTabs({ showAdmin, showPlatform }: { showAdmin: boolean; sh
   ].filter((t) => t.visible);
 
   return (
-    <nav aria-label={d.staff.chooseOrg}>
+    <nav aria-label={d.common.portalNavAria}>
       <ul className="flex items-center gap-1">
         {tabs.map((t) => {
           const active = pathname === t.href;

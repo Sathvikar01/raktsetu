@@ -6,7 +6,7 @@ import { buttonClasses } from "@/packages/ui";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
-  return { title: d.common.forbiddenTitle };
+  return { title: d.common.forbiddenTitle, robots: { index: false, follow: false } };
 }
 
 export default function ForbiddenPage() {
@@ -21,6 +21,10 @@ export default function ForbiddenPage() {
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link href="/login" className={buttonClasses("primary", "md")}>
           {d.common.signIn}
+        </Link>
+        {/* Staff land here too — offer the privileged-role login, not only the donor one. */}
+        <Link href="/partner/login" className={buttonClasses("secondary", "md")}>
+          {d.nav.staffPortal}
         </Link>
         <Link href="/" className={buttonClasses("secondary", "md")}>
           <Home className="size-4" aria-hidden />

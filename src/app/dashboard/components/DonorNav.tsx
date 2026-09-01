@@ -17,7 +17,7 @@ export function DonorNav() {
 
   return (
     <nav aria-label={d.donor.navAria}>
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center gap-1 overflow-x-auto whitespace-nowrap">
         {ITEMS.map(({ href, navKey }) => {
           const active =
             href === "/dashboard"
@@ -28,7 +28,7 @@ export function DonorNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-teal-600 ${
+                className={`rounded-lg px-2 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 sm:px-3 focus-visible:outline-teal-600 ${
                   active ? "bg-teal-50 text-teal-700" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
                 }`}
               >

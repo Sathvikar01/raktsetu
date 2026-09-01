@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Droplets } from "lucide-react";
 import { getDictionary } from "@/i18n";
 
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const d = getDictionary();
+  const t = d.public.partnerShell;
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <header className="sticky top-0 z-40 border-b border-ink/10 bg-white/95 backdrop-blur">
@@ -14,11 +18,11 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             </span>
             <span>
               <span className="block text-xs font-semibold uppercase tracking-widest text-teal-600">
-                Hospital & NGO Portal
+                {t.portalBadge}
               </span>
               <span className="flex items-center gap-1.5 text-sm font-bold tracking-tight text-ink">
                 <Droplets className="size-4 text-crimson-600" aria-hidden />
-                RaktSetu
+                {d.common.appName}
               </span>
             </span>
           </Link>
@@ -27,13 +31,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
               href="/"
               className="hidden rounded-lg px-3 py-2 text-sm font-medium text-ink-soft hover:bg-ink/5 hover:text-ink sm:inline-flex"
             >
-              Donor site →
+              {t.donorSiteLink}
             </Link>
             <Link
               href="/partner/login"
               className="inline-flex items-center justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
             >
-              Partner login
+              {t.loginCta}
             </Link>
           </nav>
         </div>
@@ -41,13 +45,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       <main className="flex-1">{children}</main>
       <footer className="border-t border-ink/10 bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 text-center text-xs text-ink-faint sm:px-6">
-          Hospital & NGO portal — same privacy guarantees, separate front door.{" "}
+          {t.footerLine}{" "}
           <Link href="/privacy" className="font-medium text-ink-soft underline-offset-4 hover:text-ink hover:underline">
-            Privacy
+            {d.nav.privacy}
           </Link>
           {" · "}
           <Link href="/" className="font-medium text-ink-soft underline-offset-4 hover:text-ink hover:underline">
-            Donor site
+            {t.donorSiteFooter}
           </Link>
         </div>
       </footer>
