@@ -96,7 +96,7 @@ Set in `.env` or compose `environment:` (never bake secrets into images).
 | `DEMO_MODE` | **must be `false` in prod** | `false` in `.env.example` | Enables the interactive demo journey, instant demo-donor view and relaxed aggregate thresholds. **A production deployment with `DEMO_MODE=true` is a misconfiguration.** |
 | `APP_URL` / `NEXT_PUBLIC_APP_URL` | **yes in prod** | localhost (dev only) | Canonical absolute origin for emailed links and metadata. Production boot/build fails on a missing value or a localhost origin. |
 | `EMAIL_PROVIDER` | no | `console` | `console` logs auth mail; `resend` delivers it via RESEND_API_KEY + EMAIL_FROM. Verification/reset mail is sent inline; outbox rows back retries. |
-| `REQUIRE_ADMIN_MFA` | no | ON in prod | TOTP second factor for ORG_ADMIN / PLATFORM_ADMIN sign-ins. Set `false` only on pure-demo deployments. |
+| `REQUIRE_ADMIN_MFA` | no | ON in prod | TOTP second factor for ORG_STAFF / ORG_ADMIN / PLATFORM_ADMIN sign-ins. Set `false` only on pure-demo deployments. |
 | `CRON_SECRET` | yes with Vercel cron | unset | Bearer token guarding `/api/cron/outbox`. |
 | `PRIVACY_MIN_COHORT` | no | `5` | k-anonymity floor for LIMITED_ANON disclosure rendering. |
 | `PRIVACY_MIN_AGGREGATE` | no | `10` | Suppression floor for public aggregate statistics. |

@@ -57,6 +57,22 @@ export function decryptSecret(stored: string): string {
   return Buffer.concat([decipher.update(Buffer.from(dataB64, "base64")), decipher.final()]).toString("utf8");
 }
 
+/** AES-GCM blobs are `iv:tag:ciphertext` (base64). TOTP base32 never contains `:`. */
+export function looksEncryptedSecret(stored: string): boolean {
+  const parts = stored.split(":");
+  return parts.length === 3 && parts.every((p) => p.length > 0);
+}
+
+/** Decrypt AES-GCM material, or return legacy plaintext (e.g. unmigrated TOTP). */
+export function decryptSecretFlexible(stored: string): string {
+  if (!looksEncryptedSecret(stored)) return stored;
+  try {
+    return decryptSecret(stored);
+  } catch {
+    return stored;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Signed partner requests: HMAC over `${timestamp}.${rawBody}`
 // Headers: X-RaktSetu-Key (keyId), X-RaktSetu-Timestamp, X-RaktSetu-Signature
@@ -88,4 +104,11 @@ export function verifySignedRequest(
   if (!secret) return { ok: false, reason: "UNKNOWN_KEY" };
   const expected = hmacSha256Hex(secret, `${timestamp}.${rawBody}`);
   return safeEqual(expected, signature.toLowerCase()) ? { ok: true } : { ok: false, reason: "BAD_SIGNATURE" };
+}
+
+/** Constant-time Bearer comparison. */
+export function bearerMatches(authorization: string | null, secret: string): boolean {
+  const prefix = "Bearer ";
+  if (!authorization?.startsWith(prefix)) return false;
+  return safeEqual(authorization.slice(prefix.length), secret);
 }

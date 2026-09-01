@@ -100,21 +100,20 @@ export async function POST(req: Request): Promise<Response> {
   const timestamp = req.headers.get("x-raktsetu-timestamp");
   const signature = req.headers.get("x-raktsetu-signature");
 
-  // Unauthenticated / spoofed-key traffic is throttled per hashed IP so
-  // header rotation cannot spawn unbounded limiter buckets or brute-force
-  // credentials. Raw IPs are never persisted.
-  if (!keyId) {
-    const ip = clientIpFrom(req.headers) ?? "anonymous";
-    const rl = await rateLimitPersistent(
-      `api-unknown:${hashedLimitKey("ip", ip)}`,
-      UNAUTH_RATE_LIMIT_PER_MIN,
-      RATE_WINDOW_MS
-    );
-    if (!rl.ok) {
-      return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
-        retry_after_sec: rl.retryAfterSec,
-      });
-    }
+  // IP ceiling applies to ALL traffic (hashed, never persisted) so spoofed or
+  // stolen keyIds cannot spawn unbounded per-key limiter buckets or brute-force
+  // credentials from one host. Keyed requests additionally get the higher
+  // per-keyId allowance.
+  const ip = clientIpFrom(req.headers) ?? "anonymous";
+  const ipRl = await rateLimitPersistent(
+    `api-unknown:${hashedLimitKey("ip", ip)}`,
+    keyId ? RATE_LIMIT_PER_MIN : UNAUTH_RATE_LIMIT_PER_MIN,
+    RATE_WINDOW_MS
+  );
+  if (!ipRl.ok) {
+    return apiError("RATE_LIMITED", "Too many requests. Retry later.", 429, {
+      retry_after_sec: ipRl.retryAfterSec,
+    });
   }
 
   if (keyId) {

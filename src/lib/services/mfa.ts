@@ -1,6 +1,6 @@
 import "server-only";
 /**
- * TOTP MFA for privileged roles (ORG_ADMIN, PLATFORM_ADMIN).
+ * TOTP MFA for privileged roles (ORG_STAFF, ORG_ADMIN, PLATFORM_ADMIN).
  *
  * Flow: password check succeeds -> if MFA is required and enrolled, NO session
  * is created; instead a short-lived signed "pending login" cookie is issued
@@ -13,6 +13,8 @@ import { createHmac } from "node:crypto";
 import { prisma } from "@/packages/database/client";
 import { env } from "@/lib/env";
 import { generateTotpSecret, otpauthUri, verifyTotp } from "@/lib/auth/totp";
+import { decryptSecretFlexible, encryptSecret, looksEncryptedSecret } from "@/lib/crypto";
+import { peekRateLimitPersistent, rateLimitPersistent } from "@/lib/rate-limit";
 
 export const MFA_PENDING_COOKIE = "rs_mfa_pending";
 
@@ -20,7 +22,9 @@ const PENDING_TTL_MS = 5 * 60_000;
 const MFA_WINDOW_MS = 15 * 60_000;
 const MFA_MAX_ATTEMPTS = 5;
 
-const ADMIN_ROLES = new Set(["ORG_ADMIN", "PLATFORM_ADMIN"]);
+// ORG_STAFF is included: staff act on clinical-adjacent records, so the
+// second factor is required for every privileged role (REQUIRE_ADMIN_MFA).
+const ADMIN_ROLES = new Set(["ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN"]);
 
 export function isAdminRole(role: string): boolean {
   return ADMIN_ROLES.has(role);
@@ -105,10 +109,20 @@ export async function loadOrCreateEnrollment(userId: string): Promise<MfaEnrollV
   });
   if (!user || user.mfaEnrolledAt) return null;
 
-  const secret = user.mfaSecret ?? generateTotpSecret();
-  if (secret !== user.mfaSecret) {
-    await prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret, mfaLastCounter: 0 } });
+  // Secrets are always encrypted at rest (AES-256-GCM). A pre-existing
+  // plaintext secret (pre-hardening row) is transparently re-saved encrypted.
+  let stored = user.mfaSecret;
+  if (!stored) {
+    stored = encryptSecret(generateTotpSecret());
+    await prisma.user.update({
+      where: { id: userId },
+      data: { mfaSecret: stored, mfaLastCounter: 0 },
+    });
+  } else if (!looksEncryptedSecret(stored)) {
+    stored = encryptSecret(stored);
+    await prisma.user.update({ where: { id: userId }, data: { mfaSecret: stored } });
   }
+  const secret = decryptSecretFlexible(stored);
   return { secret, uri: otpauthUri(secret, user.email, "RaktSetu"), email: user.email };
 }
 
@@ -141,14 +155,10 @@ async function verifyAndOpen(
   if (!(await readMfaPendingUserId())) return { ok: false, reason: "EXPIRED" };
 
   const attemptsKey = `mfa-attempts:${userId}`;
-  const recent = await prisma.rateLimitBucket.findUnique({ where: { key: attemptsKey } });
-  if (
-    recent &&
-    Date.now() - recent.windowStart.getTime() < MFA_WINDOW_MS &&
-    recent.count > MFA_MAX_ATTEMPTS
-  ) {
-    return { ok: false, reason: "RATE_LIMITED" };
-  }
+  // Peek-then-charge: the bucket is only consumed by FAILED attempts, and
+  // rateLimitPersistent resets the window when it expires (no sticky window).
+  const recent = await peekRateLimitPersistent(attemptsKey, MFA_MAX_ATTEMPTS, MFA_WINDOW_MS);
+  if (!recent.ok) return { ok: false, reason: "RATE_LIMITED" };
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -158,19 +168,20 @@ async function verifyAndOpen(
     return { ok: false, reason: "EXPIRED" };
   }
 
-  const result = verifyTotp(user.mfaSecret, code, user.mfaLastCounter);
+  const result = verifyTotp(decryptSecretFlexible(user.mfaSecret), code, user.mfaLastCounter);
   if (!result.ok || result.counter === undefined) {
     try {
-      await prisma.rateLimitBucket.upsert({
-        where: { key: attemptsKey },
-        create: { key: attemptsKey, count: 1, windowStart: new Date() },
-        update: { count: { increment: 1 } },
-      });
+      await rateLimitPersistent(attemptsKey, MFA_MAX_ATTEMPTS, MFA_WINDOW_MS, { failClosed: true });
     } catch {
       // limiter row failure must not bypass verification itself
     }
     return { ok: false, reason: "INVALID" };
   }
+
+  // Success: a fresh code resets the attempt budget entirely.
+  await prisma.rateLimitBucket
+    .delete({ where: { key: attemptsKey } })
+    .catch(() => undefined);
 
   await prisma.user.update({
     where: { id: userId },

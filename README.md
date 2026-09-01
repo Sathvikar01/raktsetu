@@ -121,7 +121,7 @@ In `.env`, set `DATABASE_URL=postgresql://raktsetu:raktsetu_dev@localhost:5432/r
 - **`APP_URL` / `NEXT_PUBLIC_APP_URL`** is REQUIRED in production and must be
   an absolute non-localhost origin; boot/build fails otherwise.
 - **Admin MFA**: ORG_ADMIN and PLATFORM_ADMIN sign-ins require TOTP
-  (`REQUIRE_ADMIN_MFA`, default ON in production). Demo accounts get secrets
+  (`REQUIRE_ADMIN_MFA`, default ON in production; applies to ORG_STAFF, ORG_ADMIN and PLATFORM_ADMIN). Demo accounts get secrets
   provisioned by `npm run seed`; set `REQUIRE_ADMIN_MFA=false` for pure-demo
   deployments.
 

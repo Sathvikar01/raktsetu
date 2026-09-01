@@ -27,7 +27,7 @@ Assets ranked: recipient context > donor PII > lifecycle event integrity > platf
 - Over-aggregation leaks → public stats suppression thresholds (PI-12).
 - Log leakage: structured logs exclude payloads containing personal/medical data by construction;
   error serializer redacts known sensitive keys.
-- Transport: TLS enforced at proxy/compose level in prod; HSTS + security headers via middleware.
+- Transport: TLS enforced at proxy/compose level in prod; HSTS (max-age 2y, includeSubDomains, preload) + security headers via next.config.mjs headers(). CSP script-src still carries 'unsafe-inline' for the App Router bootstrap; the nonce-based middleware CSP that removes it is a tracked follow-up.
 
 ### Denial of service
 - Ingestion flooding → per-key rate limits + payload size caps; idempotency makes replays cheap.

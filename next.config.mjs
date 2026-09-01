@@ -6,9 +6,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const isProd = process.env.NODE_ENV === "production";
 
-// Hardened CSP. unsafe-eval only in dev (Next HMR); script-src keeps
-// 'unsafe-inline' for the App Router bootstrap until a nonce-based middleware
-// CSP lands (tracked as follow-up). object-src 'none' blocks plugin content.
+// Hardened CSP. unsafe-eval only in dev (Next HMR). script-src keeps
+// 'unsafe-inline' for now because the App Router bootstrap injects inline
+// scripts; the plan to move to nonce-based middleware CSP is documented in
+// docs/threat-model.md. object-src 'none' blocks plugin content.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
@@ -28,7 +29,7 @@ const nextConfig = {
   // Pin the workspace root: stray package-lock.json files above this repo
   // (OneDrive sync) otherwise make Next infer the wrong root.
   outputFileTracingRoot: __dirname,
-  eslint: { ignoreDuringBuilds: true },
+  eslint: { ignoreDuringBuilds: false },
   headers: async () => [
     {
       source: "/:path*",
@@ -38,6 +39,15 @@ const nextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         { key: "Content-Security-Policy", value: csp },
+        // HSTS only in production: dev runs on plain http://localhost.
+        ...(isProd
+          ? [
+              {
+                key: "Strict-Transport-Security",
+                value: "max-age=63072000; includeSubDomains; preload",
+              },
+            ]
+          : []),
       ],
     },
   ],
