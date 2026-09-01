@@ -5,12 +5,11 @@ import { NextResponse, type NextRequest } from "next/server";
  * server-side in layouts/actions via requireRole/requireOrgMember — this
  * middleware must never be the sole security boundary.
  */
+// Coarse gating covers only the role portals. Donor sub-pages live under
+// /dashboard/* and are enforced by requireRole in layouts/actions — this
+// middleware must never be the sole security boundary.
 const PROTECTED_PREFIXES: Array<{ prefix: string; cookie: string; login: string }> = [
   { prefix: "/dashboard", cookie: "rs_session", login: "/login" },
-  { prefix: "/donations", cookie: "rs_session", login: "/login" },
-  { prefix: "/impact", cookie: "rs_session", login: "/login" },
-  { prefix: "/notifications", cookie: "rs_session", login: "/login" },
-  { prefix: "/settings", cookie: "rs_session", login: "/login" },
   { prefix: "/staff", cookie: "rs_session", login: "/partner/login" },
   { prefix: "/admin", cookie: "rs_session", login: "/partner/login" },
 ];
@@ -29,5 +28,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/donations/:path*", "/impact/:path*", "/notifications/:path*", "/settings/:path*", "/staff/:path*", "/admin/:path*"],
+  matcher: ["/dashboard/:path*", "/staff/:path*", "/admin/:path*"],
 };

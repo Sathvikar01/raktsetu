@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Alert, Card, CardBody, CardHeader, CardTitle } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { loadOrCreateEnrollment, readMfaPendingUserId } from "@/lib/services/mfa";
 import { MfaChallengeForm } from "../MfaChallengeForm";
 import { MfaQr } from "../MfaQr";
+
+export const metadata: Metadata = { title: "Set up MFA", robots: { index: false, follow: false } };
 
 /**
  * First-time TOTP enrollment for privileged roles. Reachable only with a
@@ -12,7 +15,7 @@ import { MfaQr } from "../MfaQr";
 export default async function MfaEnrollPage() {
   const d = getDictionary();
   const userId = await readMfaPendingUserId();
-  if (!userId) redirect("/login");
+  if (!userId) redirect("/partner/login");
 
   const enrollment = await loadOrCreateEnrollment(userId);
   if (!enrollment) redirect("/mfa/challenge");

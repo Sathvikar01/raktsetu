@@ -9,7 +9,7 @@ import { loginAction } from "@/app/(auth)/actions";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
-  return { title: d.public.auth.loginTitle, description: d.public.auth.loginSubtitle };
+  return { title: d.public.auth.loginTitle, description: d.public.auth.loginSubtitle, robots: { index: false, follow: false } };
 }
 
 const ERROR_KEYS = {
@@ -21,10 +21,10 @@ const ERROR_KEYS = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string; next?: string }>;
 }) {
   const d = getDictionary();
-  const { error, reset } = await searchParams;
+  const { error, reset, next } = await searchParams;
   const errorMessage =
     error && error in ERROR_KEYS
       ? d.public.auth[ERROR_KEYS[error as keyof typeof ERROR_KEYS]]
@@ -57,6 +57,7 @@ export default async function LoginPage({
         </div>
       ) : null}
       <form action={loginAction} className="space-y-5">
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <div>
           <Label htmlFor="email">{d.common.email}</Label>
           <Input

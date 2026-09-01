@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createSession } from "@/lib/auth/session";
 import { authenticate, registerDonor, type AuthFailure } from "@/lib/services/account";
 import { beginMfaChallenge, mfaEnrolled } from "@/lib/services/mfa";
+import { destinationForRole } from "@/lib/auth/safe-path";
 
 const EMAIL = z.string().trim().min(3).max(254);
 
@@ -19,10 +20,8 @@ const RegisterSchema = z.object({
   password: z.string().min(10).max(200),
 });
 
-function roleDestination(role: string): string {
-  if (role === "ORG_STAFF" || role === "ORG_ADMIN") return "/staff";
-  if (role === "PLATFORM_ADMIN") return "/admin";
-  return "/dashboard";
+function roleDestination(role: string, next?: FormData): string {
+  return destinationForRole(role, next?.get("next") ?? undefined);
 }
 
 const REGISTER_ERROR_CODES: Record<AuthFailure, string> = {
@@ -59,7 +58,7 @@ export async function loginAction(formData: FormData): Promise<void> {
   }
 
   await createSession(result.userId);
-  redirect(roleDestination(result.role));
+  redirect(roleDestination(result.role, formData));
 }
 
 export async function registerAction(formData: FormData): Promise<void> {
@@ -68,7 +67,12 @@ export async function registerAction(formData: FormData): Promise<void> {
     email: formData.get("email"),
     password: formData.get("password"),
   });
-  if (!parsed.success) redirect("/register?error=weak_password");
+  if (!parsed.success) {
+    // Distinguish a malformed email from a too-weak password so the form
+    // error matches the actual problem instead of always blaming the password.
+    const emailIssue = parsed.error.issues.some((i) => i.path[0] === "email");
+    redirect(`/register?error=${emailIssue ? "invalid_email" : "weak_password"}`);
+  }
 
   const registered = await registerDonor({
     email: parsed.data.email,
