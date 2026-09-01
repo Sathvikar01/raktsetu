@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDictionary } from "@/i18n";
 import { can, ForbiddenError, requireRole } from "@/lib/rbac";
+import { requireCsrf } from "@/lib/auth/session";
 import { prisma } from "@/packages/database/client";
 import { logout } from "@/lib/services/account";
 import {
@@ -56,6 +57,7 @@ export async function recordDonationAction(
   const organizationId = str(formData, "organizationId");
   let userId: string;
   try {
+    await requireCsrf(formData); // CsrfError → generic ops failure
     userId = await staffGate(organizationId);
   } catch (err) {
     return opsFailure(err);
@@ -102,6 +104,7 @@ export async function completeProcessingAction(
   const organizationId = str(formData, "organizationId");
   let userId: string;
   try {
+    await requireCsrf(formData); // CsrfError → generic ops failure
     userId = await staffGate(organizationId);
   } catch (err) {
     return opsFailure(err);
@@ -123,6 +126,7 @@ export async function createComponentsAction(
   const organizationId = str(formData, "organizationId");
   let userId: string;
   try {
+    await requireCsrf(formData); // CsrfError → generic ops failure
     userId = await staffGate(organizationId);
   } catch (err) {
     return opsFailure(err);
@@ -165,6 +169,7 @@ export async function transferComponentAction(
   const organizationId = str(formData, "organizationId");
   let userId: string;
   try {
+    await requireCsrf(formData); // CsrfError → generic ops failure
     userId = await staffGate(organizationId);
   } catch (err) {
     return opsFailure(err);
@@ -195,6 +200,7 @@ async function terminalAction(
   const organizationId = str(formData, "organizationId");
   let userId: string;
   try {
+    await requireCsrf(formData); // CsrfError → generic ops failure
     userId = await staffGate(organizationId);
   } catch (err) {
     return opsFailure(err);
@@ -241,6 +247,7 @@ export async function markComponentDiscardedAction(
 
 async function hospitalActionBase(formData: FormData): Promise<{ organizationId: string; userId: string }> {
   const organizationId = str(formData, "organizationId");
+  await requireCsrf(formData); // CsrfError → caught by callers
   const userId = await staffGate(organizationId);
   return { organizationId, userId };
 }
@@ -398,7 +405,12 @@ export async function hospitalTransfuseComponentAction(
 // Session
 // ---------------------------------------------------------------------------
 
-export async function signOutStaffAction(): Promise<void> {
+export async function signOutStaffAction(formData: FormData): Promise<void> {
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/staff");
+  }
   await logout();
   redirect("/");
 }

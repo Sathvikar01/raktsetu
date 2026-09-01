@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
@@ -41,6 +42,7 @@ export function CreateIntegrationForm({ organizationId }: { organizationId: stri
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

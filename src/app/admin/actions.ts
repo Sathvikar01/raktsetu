@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getDictionary } from "@/i18n";
 import { can, requireRole } from "@/lib/rbac";
+import { CsrfError, requireCsrf, verifyCsrfToken } from "@/lib/auth/session";
 import { prisma } from "@/packages/database/client";
 import { recordAudit } from "@/lib/audit";
 import { logout } from "@/lib/services/account";
@@ -45,6 +46,7 @@ export async function createIntegrationAction(
 ): Promise<AdminActionState> {
   const organizationId = str(formData, "organizationId");
   try {
+    await requireCsrf(formData); // CsrfError → generic admin failure
     await integrationGate(organizationId);
   } catch (err) {
     return adminFailure(err);
@@ -86,10 +88,12 @@ export async function createIntegrationAction(
 
 export async function rotateIntegrationCredentialAction(
   organizationId: string,
-  credentialId: string
+  credentialId: string,
+  csrfToken: string
 ): Promise<AdminActionState> {
   const d = getDictionary();
   try {
+    if (!(await verifyCsrfToken(csrfToken))) throw new CsrfError();
     await integrationGate(organizationId);
   } catch (err) {
     return adminFailure(err);
@@ -116,10 +120,12 @@ export async function rotateIntegrationCredentialAction(
 export async function revokeIntegrationCredentialAction(
   organizationId: string,
   credentialId: string,
-  reason?: string
+  reason: string,
+  csrfToken: string
 ): Promise<AdminActionState> {
   const d = getDictionary();
   try {
+    if (!(await verifyCsrfToken(csrfToken))) throw new CsrfError();
     await integrationGate(organizationId);
   } catch (err) {
     return adminFailure(err);
@@ -144,6 +150,11 @@ export async function revokeIntegrationCredentialAction(
 export async function setOrgStatusAction(formData: FormData): Promise<void> {
   const user = await requireRole("PLATFORM_ADMIN"); // redirects others to /forbidden
   if (!can(user.role, "org:manage")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
 
   const orgId = str(formData, "orgId");
   const target = str(formData, "target");
@@ -175,7 +186,12 @@ export async function setOrgStatusAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/platform");
 }
 
-export async function signOutAdminAction(): Promise<void> {
+export async function signOutAdminAction(formData: FormData): Promise<void> {
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/admin");
+  }
   await logout();
   redirect("/");
 }

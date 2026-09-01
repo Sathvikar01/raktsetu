@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import {
   Alert,
@@ -54,6 +55,7 @@ function HospitalSimpleForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <ScanOrSelect
             id={`hp-component-${idSuffix}`}
@@ -193,6 +195,7 @@ export function TransfuseForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
 
           <ScanOrSelect

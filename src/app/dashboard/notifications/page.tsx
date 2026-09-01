@@ -10,6 +10,7 @@ import {
 } from "@/packages/ui";
 import { DEFAULT_LOCALE, getDictionary, translate } from "@/i18n";
 import { fromJson } from "@/lib/json";
+import { CsrfInput } from "@/components/site/CsrfInput";
 import { requireRole } from "@/lib/rbac";
 import { prisma } from "@/packages/database/client";
 import { LocalDateTime } from "../components/LocalTime";
@@ -82,6 +83,7 @@ export default async function NotificationsPage() {
         <h1 className="text-xl font-bold tracking-tight text-ink">{d.donor.notificationsTitle}</h1>
         {unreadCount > 0 ? (
           <form action={markAllNotificationsReadAction}>
+            <CsrfInput />
             <button type="submit" className={buttonClasses("secondary", "sm")}>
               {d.donor.markAllRead}
             </button>

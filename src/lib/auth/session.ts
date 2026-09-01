@@ -3,10 +3,10 @@ import { cookies } from "next/headers";
 import { prisma } from "@/packages/database/client";
 import { env } from "@/lib/env";
 import { randomToken, hashWithPepper, safeEqual } from "@/lib/crypto";
+import { CSRF_COOKIE, CSRF_FIELD, CSRF_HEADER } from "@/lib/auth/csrf-cookie";
 
 export const SESSION_COOKIE = "rs_session";
-export const CSRF_COOKIE = "rs_csrf";
-export const CSRF_HEADER = "x-csrf-token";
+export { CSRF_COOKIE, CSRF_FIELD, CSRF_HEADER };
 
 export interface SessionUser {
   id: string;
@@ -80,15 +80,44 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   };
 }
 
-/** Double-submit CSRF check for mutating requests authenticated by cookie. */
-export async function verifyCsrf(req: Request): Promise<boolean> {
-  const header = req.headers.get(CSRF_HEADER);
-  if (!header) return false;
+/** Double-submit CSRF check (header or form field) against the readable cookie. */
+export async function verifyCsrf(req?: Request, formData?: FormData): Promise<boolean> {
   const jar = await cookies();
   const cookieVal = jar.get(CSRF_COOKIE)?.value;
   if (!cookieVal) return false;
-  return safeEqual(header, cookieVal);
+  const fromForm = formData ? String(formData.get(CSRF_FIELD) ?? "") : "";
+  if (fromForm) return safeEqual(fromForm, cookieVal);
+  if (req) {
+    const header = req.headers.get(CSRF_HEADER);
+    if (!header) return false;
+    return safeEqual(header, cookieVal);
+  }
+  return false;
 }
+
+export class CsrfError extends Error {
+  constructor() {
+    super("CSRF");
+    this.name = "CsrfError";
+  }
+}
+
+export async function requireCsrf(formData: FormData): Promise<void> {
+  if (!(await verifyCsrf(undefined, formData))) throw new CsrfError();
+}
+
+/**
+ * Double-submit check for arg-style (non-form) server actions: the client
+ * passes the JS-readable csrf cookie value as an argument.
+ */
+export async function verifyCsrfToken(token: string | null | undefined): Promise<boolean> {
+  const jar = await cookies();
+  const cookieVal = jar.get(CSRF_COOKIE)?.value;
+  if (!cookieVal || !token) return false;
+  return safeEqual(token, cookieVal);
+}
+
+export class CsrfTokenError extends CsrfError {}
 
 export async function destroySession(): Promise<void> {
   const jar = await cookies();

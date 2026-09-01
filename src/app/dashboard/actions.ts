@@ -9,6 +9,7 @@ import { recordAudit } from "@/lib/audit";
 import { logout, linkDonationToDonor } from "@/lib/services/account";
 import { clientIpFrom } from "@/lib/rate-limit";
 import { can, requireRole } from "@/lib/rbac";
+import { CsrfError, requireCsrf } from "@/lib/auth/session";
 import { prisma } from "@/packages/database/client";
 import { DONOR_CONSENT_PURPOSES, type DonorActionState } from "./types";
 
@@ -17,6 +18,11 @@ import { DONOR_CONSENT_PURPOSES, type DonorActionState } from "./types";
  * and permission before touching data; ownership is enforced by scoping
  * every query to the session user's ids (PI-9).
  */
+
+/** Double-submit CSRF guard for authenticated donor mutations (throws CsrfError). */
+function assertCsrf(formData: FormData): Promise<void> {
+  return requireCsrf(formData);
+}
 
 const LinkSchema = z.object({
   linkCode: z.string().trim().regex(/^[A-Za-z0-9-]{6,32}$/),
@@ -28,6 +34,11 @@ export async function linkDonationAction(
 ): Promise<DonorActionState> {
   const user = await requireRole("DONOR");
   const d = getDictionary();
+  try {
+    await assertCsrf(formData);
+  } catch {
+    return { ok: false, message: d.common.errorGeneric };
+  }
   const parsed = LinkSchema.safeParse({ linkCode: formData.get("linkCode") });
   if (!parsed.success) return { ok: false, message: d.donor.linkInvalid };
 
@@ -49,13 +60,23 @@ export async function linkDonationAction(
   return { ok: true, message: d.donor.linkSuccess };
 }
 
-export async function signOutDonorAction(): Promise<void> {
+export async function signOutDonorAction(formData: FormData): Promise<void> {
+  try {
+    await assertCsrf(formData);
+  } catch {
+    redirect("/dashboard");
+  }
   await logout();
   redirect("/");
 }
 
-export async function markAllNotificationsReadAction(): Promise<void> {
+export async function markAllNotificationsReadAction(formData: FormData): Promise<void> {
   const user = await requireRole("DONOR");
+  try {
+    await assertCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
   if (!can(user.role, "notification:write:own")) redirect("/forbidden");
   await prisma.notification.updateMany({
     where: { userId: user.id, readAt: null },
@@ -85,6 +106,11 @@ export async function saveNotificationPreferencesAction(
 ): Promise<DonorActionState> {
   const user = await requireRole("DONOR");
   const d = getDictionary();
+  try {
+    await assertCsrf(formData);
+  } catch {
+    return { ok: false, message: d.common.errorGeneric };
+  }
   const parsed = PrefsSchema.safeParse({
     inApp: checkbox(formData, "inApp"),
     email: checkbox(formData, "email"),
@@ -124,6 +150,11 @@ export async function recordConsentAction(
   const user = await requireRole("DONOR");
   if (!can(user.role, "consent:write:own")) redirect("/forbidden");
   const d = getDictionary();
+  try {
+    await assertCsrf(formData);
+  } catch {
+    return { ok: false, message: d.common.errorGeneric };
+  }
   const parsed = ConsentSchema.safeParse({
     purposeKey: formData.get("purposeKey"),
     policyVersion: formData.get("policyVersion") ?? undefined,
@@ -154,6 +185,11 @@ export async function recordConsentAction(
 export async function revokeConsentAction(formData: FormData): Promise<void> {
   const user = await requireRole("DONOR");
   if (!can(user.role, "consent:write:own")) redirect("/forbidden");
+  try {
+    await assertCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
   const id = String(formData.get("consentId") ?? "");
   // Append-oriented model: revocation sets revokedAt on the row; never deletes.
   const record = await prisma.consentRecord.findFirst({

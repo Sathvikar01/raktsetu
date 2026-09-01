@@ -36,13 +36,19 @@ export async function requestPasswordReset(email: string, ipHash?: string | null
 
   if (user && user.status === "ACTIVE") {
     const token = randomToken(32);
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashWithPepper(token),
-        expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
-      },
-    });
+    await prisma.$transaction([
+      // Only the newest token is valid — stale unused tokens must not pile up.
+      prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id, usedAt: null },
+      }),
+      prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashWithPepper(token),
+          expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+        },
+      }),
+    ]);
     const resetUrl = `${env.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
     // Delivered inline; the outbox row exists only so the worker can retry.
     await enqueueEmailWithImmediateDelivery({

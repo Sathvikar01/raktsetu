@@ -1,5 +1,5 @@
 import { getDictionary } from "@/i18n";
-import type { SessionUser } from "@/lib/auth/session";
+import { CsrfError, type SessionUser } from "@/lib/auth/session";
 import { can, ForbiddenError, requireOrgMember } from "@/lib/rbac";
 import { ProvisioningNotFoundError } from "@/lib/services/provisioning";
 import { isNextRedirectError } from "@/app/staff/shared";
@@ -11,6 +11,7 @@ import { isNextRedirectError } from "@/app/staff/shared";
 
 export function friendlyAdminError(err: unknown): string {
   const d = getDictionary();
+  if (err instanceof CsrfError) return d.common.errorGeneric;
   if (err instanceof ProvisioningNotFoundError) return d.admin.errNotFound;
   if (err instanceof ForbiddenError) return d.admin.errForbidden;
   console.error(

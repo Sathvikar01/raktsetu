@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CsrfInput } from "@/components/site/CsrfInput";
 import { CheckCircle2, XCircle } from "lucide-react";
 import {
   Badge,
@@ -160,6 +161,7 @@ export default async function SettingsPage() {
                       ) : null}
                       {!record.revokedAt ? (
                         <form action={revokeConsentAction} className="mt-3">
+                          <CsrfInput />
                           <input type="hidden" name="consentId" value={record.id} />
                           <button
                             type="submit"

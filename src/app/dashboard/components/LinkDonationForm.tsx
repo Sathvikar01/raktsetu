@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import { getDictionary } from "@/i18n";
 import { Alert, Input, Label } from "@/packages/ui";
@@ -16,6 +17,7 @@ export function LinkDonationForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+        <CsrfField />
       {state && !state.ok ? (
         <Alert type="error">{state.message}</Alert>
       ) : null}

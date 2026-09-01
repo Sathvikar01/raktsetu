@@ -4,6 +4,7 @@ import { getDictionary } from "@/i18n";
 import { prisma } from "@/packages/database/client";
 import { requireRole } from "@/lib/rbac";
 import { setOrgStatusAction } from "../actions";
+import { CsrfInput } from "@/components/site/CsrfInput";
 
 export const metadata: Metadata = { title: "Platform organizations" };
 
@@ -66,6 +67,7 @@ export default async function PlatformAdminPage() {
               <TD>{org._count.members}</TD>
               <TD>
                 <form action={setOrgStatusAction} className="flex items-center gap-2">
+                  <CsrfInput />
                   <input type="hidden" name="orgId" value={org.id} />
                   {org.status === "ACTIVE" ? (
                     <>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Alert, Badge, Card, CardBody, CardHeader, Table, TBody, TD, TH, THead, TR } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
 import { revokeIntegrationCredentialAction, rotateIntegrationCredentialAction } from "../actions";
+import { readCsrfCookie } from "@/components/site/Csrf";
 import { DestructiveAction } from "./DestructiveAction";
 import type { IntegrationView, SecretOnceView } from "../types";
 
@@ -160,7 +161,7 @@ export function IntegrationsPanel({
                                   disabled={pending || cred.status !== "ACTIVE"}
                                   onClick={() =>
                                     run(() =>
-                                      rotateIntegrationCredentialAction(organizationId, cred.id)
+                                      rotateIntegrationCredentialAction(organizationId, cred.id, readCsrfCookie())
                                     )
                                   }
                                   className="rounded-lg border border-teal-600/30 bg-white px-3 py-1.5 text-sm font-medium text-teal-700 transition-colors hover:border-teal-600/60 hover:bg-teal-50 disabled:pointer-events-none disabled:opacity-50"
@@ -180,7 +181,8 @@ export function IntegrationsPanel({
                                     revokeIntegrationCredentialAction(
                                       organizationId,
                                       cred.id,
-                                      reason
+                                      reason,
+                                      readCsrfCookie()
                                     ).then(() => undefined)
                                   }
                                 />

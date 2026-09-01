@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
@@ -25,6 +26,7 @@ export function TransferComponentForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <ScanOrSelect
             id="tr-component"

@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
@@ -29,6 +30,7 @@ export function MarkComponentTerminalForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <div>
             <Label htmlFor={`terminal-component-${kind}`}>{d.staff.labelComponent}</Label>

@@ -1,10 +1,12 @@
 import { getDictionary } from "@/i18n";
 import type { SessionUser } from "@/lib/auth/session";
+import { CsrfError } from "@/lib/auth/session";
 import { ForbiddenError, requireOrgMember } from "@/lib/rbac";
 import {
   OpsNotFoundError,
   OpsValidationError,
 } from "@/lib/services/bloodbank-ops";
+import { parseDateTimeLocal as parseDateTimeLocalStrict } from "@/lib/datetime";
 import { HospitalOpsNotFoundError } from "@/lib/services/hospital-ops";
 import {
   IngestAuthzError,
@@ -29,6 +31,7 @@ export function isNextRedirectError(err: unknown): boolean {
 /** Map known domain errors to friendly, i18n-rendered messages. Unknown → generic. */
 export function friendlyOpsError(err: unknown): string {
   const d = getDictionary();
+  if (err instanceof CsrfError) return d.common.errorGeneric;
   if (err instanceof OpsValidationError) return d.staff.errValidation;
   if (err instanceof OpsNotFoundError || err instanceof HospitalOpsNotFoundError) {
     return d.staff.errNotFound;
@@ -71,13 +74,17 @@ export function optionalStr(formData: FormData, name: string): string | null {
   return v.length > 0 ? v : null;
 }
 
-const dateTimeLocalRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
-
-/** datetime-local inputs arrive as local wall-clock strings without timezone. */
-export function parseDateTimeLocal(value: string, fallback: Date = new Date()): Date {
-  if (!dateTimeLocalRe.test(value)) return fallback;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+/**
+ * datetime-local inputs arrive as local wall-clock strings without timezone.
+ * Invalid input is a caller bug or a tampered form — it must surface as an
+ * OpsValidationError (friendly staff message), never silently become now().
+ */
+export function parseDateTimeLocal(value: string): Date {
+  try {
+    return parseDateTimeLocalStrict(value);
+  } catch {
+    throw new OpsValidationError();
+  }
 }
 
 export function formatDateTime(value: Date): string {

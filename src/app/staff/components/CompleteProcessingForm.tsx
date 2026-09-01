@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import { Alert, buttonClasses, Card, CardBody, CardHeader, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
@@ -24,6 +25,7 @@ export function CompleteProcessingForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <div>
             <Label htmlFor="proc-donation">{d.staff.labelDonation}</Label>

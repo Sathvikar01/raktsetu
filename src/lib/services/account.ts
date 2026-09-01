@@ -97,19 +97,27 @@ export async function authenticate(
   | { ok: false; reason: AuthFailure }
 > {
   const key = `login:${hashedLimitKey("email", email.trim().toLowerCase())}`;
-  // Sensitive auth limit: hashed key + fail closed on limiter failure.
-  const rl = await rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS, {
-    failClosed: true,
-  });
-  if (!rl.ok) return { ok: false, reason: "RATE_LIMITED" };
+  // Peek-then-charge: the bucket is consumed by FAILED attempts only, so a
+  // legitimate login never counts against the lockout budget. Fail closed.
+  const budget = await peekRateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS);
+  if (!budget.ok) return { ok: false, reason: "RATE_LIMITED" };
+  const chargeFailure = () =>
+    rateLimitPersistent(key, MAX_AUTH_ATTEMPTS, AUTH_WINDOW_MS, { failClosed: true });
 
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
   // Constant-ish work whether or not user exists (mitigates user enumeration timing).
   const hash = user?.passwordHash ?? "scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
   const valid = verifyPassword(password, hash);
-  if (!user || !valid) return { ok: false, reason: "INVALID" };
-  if (user.status !== "ACTIVE") return { ok: false, reason: "DISABLED" };
+  if (!user || !valid) {
+    await chargeFailure();
+    return { ok: false, reason: "INVALID" };
+  }
+  if (user.status !== "ACTIVE") {
+    await chargeFailure();
+    return { ok: false, reason: "DISABLED" };
+  }
   if (opts?.expectRole && !opts.expectRole.includes(user.role as never)) {
+    await chargeFailure();
     return { ok: false, reason: "INVALID" };
   }
   // Stronger gate for privileged roles: the email channel must be verified

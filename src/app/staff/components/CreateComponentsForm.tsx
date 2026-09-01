@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
@@ -37,6 +38,7 @@ export function CreateComponentsForm({
       </CardHeader>
       <CardBody>
         <form action={formAction} className="space-y-4">
+        <CsrfField />
           <input type="hidden" name="organizationId" value={organizationId} />
           <input type="hidden" name="rowCount" value={rows.length} />
           <div>

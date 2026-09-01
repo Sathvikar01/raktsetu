@@ -1,5 +1,6 @@
 "use client";
 
+import { CsrfField } from "@/components/site/Csrf";
 import { useActionState } from "react";
 import { getDictionary, LOCALES } from "@/i18n";
 import { Alert, Label, Select } from "@/packages/ui";
@@ -34,6 +35,7 @@ export function NotificationPrefsForm({ defaults }: { defaults: NotificationPref
 
   return (
     <form action={formAction} className="space-y-4">
+        <CsrfField />
       {state ? (
         <Alert type={state.ok ? "success" : "error"}>{state.message}</Alert>
       ) : null}
