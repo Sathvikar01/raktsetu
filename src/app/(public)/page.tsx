@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Code2, GitBranch, HandHeart, ShieldCheck } from "lucide-react";
 import { getDictionary } from "@/i18n";
+import { env } from "@/lib/env";
 import { buttonClasses } from "@/packages/ui";
 import { Card, CardBody, CardHeader } from "@/packages/ui";
 import { SectionHeading } from "@/packages/ui";
@@ -24,8 +25,26 @@ export const dynamic = "force-dynamic";
 
 export default function LandingPage() {
   const d = getDictionary();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "RaktSetu",
+    url: env.APP_URL,
+    description:
+      "Open-source, privacy-preserving transparency layer between blood banks, hospitals and blood donors.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${env.APP_URL}/community-impact`,
+      "query-input": "required",
+    },
+  };
   return (
     <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger -- static, server-generated JSON-LD
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div

@@ -9,7 +9,7 @@ import { registerAction } from "@/app/(auth)/actions";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
-  return { title: d.public.auth.registerTitle, description: d.public.auth.registerSubtitle };
+  return { title: d.public.auth.registerTitle, description: d.public.auth.registerSubtitle, robots: { index: false, follow: false } };
 }
 
 const ERROR_KEYS = {

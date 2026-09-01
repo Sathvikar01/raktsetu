@@ -9,7 +9,7 @@ import { resetPasswordAction } from "./actions";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
-  return { title: d.public.auth.resetTitle };
+  return { title: d.public.auth.resetTitle, robots: { index: false, follow: false } };
 }
 
 export default async function ResetPasswordPage({

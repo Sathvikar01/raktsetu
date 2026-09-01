@@ -8,7 +8,7 @@ import { forgotPasswordAction } from "./actions";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
-  return { title: d.public.auth.forgotTitle };
+  return { title: d.public.auth.forgotTitle, robots: { index: false, follow: false } };
 }
 
 export default async function ForgotPasswordPage({

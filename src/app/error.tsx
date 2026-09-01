@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 import { getDictionary } from "@/i18n";
 import { Alert, buttonClasses } from "@/packages/ui";
 
@@ -20,9 +20,12 @@ export default function ErrorPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4 py-16 text-center">
-      <p aria-hidden className="text-6xl font-bold text-teal-100">
-        :((
-      </p>
+      <span
+        aria-hidden
+        className="inline-flex size-16 items-center justify-center rounded-full bg-teal-50 text-teal-600"
+      >
+        <AlertTriangle className="size-8" />
+      </span>
       <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-ink">{d.common.errorTitle}</h1>
       <p className="mt-3 leading-relaxed text-ink-soft">{d.common.errorBody}</p>
       <div className="mt-6 w-full">
