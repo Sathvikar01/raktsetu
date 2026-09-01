@@ -18,7 +18,10 @@
     "db:use:postgres": "node scripts/db-switch.mjs postgres && prisma generate && prisma db push --skip-generate",
     "seed": "tsx scripts/seed.ts",
     "db:clean": "tsx scripts/clean-demo-data.ts",
-    "outbox:process": "tsx scripts/process-outbox.ts"
+    "outbox:process": "tsx scripts/process-outbox.ts",
+    "mfa:backfill": "tsx scripts/backfill-mfa-secrets.ts",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed"
   },
   "prisma": {
     "schema": "src/packages/database/schema.prisma"
@@ -35,6 +38,7 @@
     "zod": "3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "20.17.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
