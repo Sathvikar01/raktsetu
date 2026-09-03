@@ -32,12 +32,15 @@ Two supported production shapes:
 
 - **Vercel** (this repository ships `vercel.json`): the platform runs the app;
   bring your own PostgreSQL 16 and set the environment variables below. The
-  cron calls `/api/cron/outbox` every 15 minutes (outbox email drain + the
-  inventory auto-expiry sweep) and `/api/cron/emergency` every 5 minutes
-  (emergency-request expiry/advancement + camp auto-completion); protect both
-  with `CRON_SECRET`. Vercel's Hobby plan only supports daily cron schedules —
-  on Hobby either keep the daily schedule or call the endpoints from an
-  external pinger with the same bearer secret.
+  committed cron schedules are Hobby-compatible daily jobs — outbox drain +
+  inventory expiry at 03:00 UTC, emergency/camp sweep at 04:00 UTC — both
+  guarded by `CRON_SECRET`. The emergency network is designed to work under
+  any sweep cadence: status-page polls opportunistically advance their own
+  request, so requesters see progress in near-real-time even between cron
+  ticks. On the Pro plan (or with an external pinger such as cron-job.org
+  hitting the endpoints with the same bearer secret), tighten to
+  `/api/cron/outbox` every 15 minutes and `/api/cron/emergency` every
+  5 minutes for prompt donor-notification sweeps.
 - **Self-managed**: run PostgreSQL 16 via docker-compose (`docker compose up -d db`
   uses the committed compose file, service name `db`) and the Next.js app via
   the shipped Dockerfile (`docker compose --profile app up -d` or any container

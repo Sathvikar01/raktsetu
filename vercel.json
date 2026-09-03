@@ -1,14 +1,14 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "$schema": "https://openapi.sh/vercel.json",
   "buildCommand": "node scripts/db-switch.mjs postgres && prisma generate && node -e \"require('fs').rmSync('.next/cache',{recursive:true,force:true})\" && next build",
   "crons": [
     {
       "path": "/api/cron/outbox",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/emergency",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 4 * * *"
     }
   ]
 }
