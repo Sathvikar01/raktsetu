@@ -8,6 +8,7 @@ import type { SessionUser } from "@/lib/auth/session";
 import { requireRole } from "@/lib/rbac";
 import { CreateIntegrationForm } from "./components/CreateIntegrationForm";
 import { IntegrationsPanel } from "./components/IntegrationsPanel";
+import { CampsPanel } from "./components/CampsPanel";
 
 export const metadata: Metadata = { title: "Admin console" };
 
@@ -162,6 +163,8 @@ export default async function AdminPage({
         />
         {canWriteIntegrations ? <CreateIntegrationForm organizationId={selected.id} /> : null}
       </section>
+
+      <CampsPanel organizationId={selected.id} />
 
       {auditVisible ? (
         <section aria-labelledby="audit-heading" className="space-y-4">

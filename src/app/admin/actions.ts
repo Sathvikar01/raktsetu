@@ -10,6 +10,15 @@ import { prisma } from "@/packages/database/client";
 import { recordAudit } from "@/lib/audit";
 import { logout } from "@/lib/services/account";
 import {
+  approvePartnerRequest,
+  rejectPartnerRequest,
+} from "@/lib/services/partner-onboarding";
+import {
+  approveCamp,
+  rejectCamp,
+} from "@/lib/services/camps";
+import { setEmergencyModeration } from "@/lib/services/emergency-requests";
+import {
   createIntegrationWithCredential,
   ProvisioningNotFoundError,
   revokeCredential,
@@ -182,6 +191,113 @@ export async function setOrgStatusAction(formData: FormData): Promise<void> {
     resourceType: "Organization",
     resourceId: org.id,
     metadata: { from: org.status, to: parsedTarget.data, reason },
+  });
+  revalidatePath("/admin/platform");
+}
+
+// ---------------------------------------------------------------------------
+// Partner onboarding review (PLATFORM_ADMIN only)
+// ---------------------------------------------------------------------------
+
+export async function approvePartnerRequestAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN");
+  if (!can(user.role, "org:manage")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
+  const requestId = z.string().uuid().safeParse(str(formData, "requestId"));
+  const orgKind = z
+    .enum(["BLOOD_BANK", "HOSPITAL", "BLOOD_BANK_AND_HOSPITAL"])
+    .safeParse(str(formData, "orgKind") || "BLOOD_BANK");
+  if (!requestId.success || !orgKind.success) {
+    redirect("/admin/platform?error=partner_invalid");
+  }
+  const outcome = await approvePartnerRequest(requestId.data, orgKind.data, user.id);
+  if (!outcome.ok) redirect("/admin/platform?error=partner_state");
+  revalidatePath("/admin/platform");
+}
+
+export async function rejectPartnerRequestAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN");
+  if (!can(user.role, "org:manage")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
+  const requestId = z.string().uuid().safeParse(str(formData, "requestId"));
+  const reason = str(formData, "reason");
+  if (!requestId.success || reason.length < 4) {
+    redirect("/admin/platform?error=reason_required");
+  }
+  const outcome = await rejectPartnerRequest(requestId.data, reason, user.id);
+  if (!outcome.ok) redirect("/admin/platform?error=partner_state");
+  revalidatePath("/admin/platform");
+}
+
+// ---------------------------------------------------------------------------
+// Camp verification + emergency moderation (PLATFORM_ADMIN only)
+// ---------------------------------------------------------------------------
+
+export async function approveCampAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN");
+  if (!can(user.role, "camp:moderate")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
+  const campId = z.string().uuid().safeParse(str(formData, "campId"));
+  if (!campId.success) redirect("/admin/platform?error=partner_invalid");
+  try {
+    await approveCamp(campId.data, user.id);
+  } catch {
+    redirect("/admin/platform?error=camp_state");
+  }
+  revalidatePath("/admin/platform");
+  revalidatePath("/camps");
+}
+
+export async function rejectCampAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN");
+  if (!can(user.role, "camp:moderate")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
+  const campId = z.string().uuid().safeParse(str(formData, "campId"));
+  const reason = str(formData, "reason");
+  if (!campId.success || reason.length < 4) redirect("/admin/platform?error=reason_required");
+  try {
+    await rejectCamp(campId.data, user.id, reason);
+  } catch {
+    redirect("/admin/platform?error=camp_state");
+  }
+  revalidatePath("/admin/platform");
+  revalidatePath("/camps");
+}
+
+export async function setEmergencyModerationAction(formData: FormData): Promise<void> {
+  const user = await requireRole("PLATFORM_ADMIN");
+  if (!can(user.role, "emergency:moderate")) redirect("/forbidden");
+  try {
+    await requireCsrf(formData);
+  } catch {
+    redirect("/forbidden");
+  }
+  const requestId = z.string().uuid().safeParse(str(formData, "requestId"));
+  const block = str(formData, "block") === "true";
+  const reason = str(formData, "reason");
+  if (!requestId.success) redirect("/admin/platform?error=partner_invalid");
+  if (block && reason.length < 4) redirect("/admin/platform?error=reason_required");
+  await setEmergencyModeration({
+    requestId: requestId.data,
+    moderatorId: user.id,
+    block,
+    reason: reason || undefined,
   });
   revalidatePath("/admin/platform");
 }
