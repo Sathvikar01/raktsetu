@@ -65,9 +65,12 @@ export default function LandingPage() {
               {d.public.heroBody}
             </p>
             <div className="rs-reveal rs-reveal-3 mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/how-it-works#demo" className={`group ${buttonClasses("primary", "lg")}`}>
-                {d.public.ctaDemo}
+              <Link href="/register" className={`group ${buttonClasses("primary", "lg")}`}>
+                {d.public.ctaRegister}
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+              <Link href="/how-it-works#demo" className={buttonClasses("secondary", "lg")}>
+                {d.public.ctaDemo}
               </Link>
               <Link href="/how-it-works" className={buttonClasses("secondary", "lg")}>
                 {d.public.ctaHow}
