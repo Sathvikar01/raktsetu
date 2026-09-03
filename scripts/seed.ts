@@ -185,6 +185,30 @@ async function main(): Promise<number> {
     kind: "HOSPITAL",
   });
 
+  // A second blood bank so emergency bank sweeps have multiple candidates.
+  const eastBloodBank = await upsertOrganization({
+    name: "Riverside Blood Bank",
+    kind: "BLOOD_BANK",
+    status: "ACTIVE",
+  });
+  await upsertFacility({
+    organizationId: eastBloodBank.id,
+    name: "Riverside Lab",
+    code: "RSB-LAB",
+    externalCode: null,
+    kind: "PROCESSING_LAB",
+  });
+
+  // Public facility coordinates (~1km precision) power nearby search.
+  const ORG_COORDS: Record<string, { latitude: number; longitude: number; regionLabel: string }> = {
+    [bloodBank.id]: { latitude: 18.5204, longitude: 73.8567, regionLabel: "Central Pune" },
+    [hospital.id]: { latitude: 18.5215, longitude: 73.8551, regionLabel: "Central Pune" },
+    [eastBloodBank.id]: { latitude: 18.5503, longitude: 73.9402, regionLabel: "East Pune" },
+  };
+  for (const [orgId, coords] of Object.entries(ORG_COORDS)) {
+    await prisma.organization.update({ where: { id: orgId }, data: coords });
+  }
+
   // --- Users -----------------------------------------------------------
   const admin = await upsertUser({
     email: "admin@demo.local",
@@ -214,6 +238,20 @@ async function main(): Promise<number> {
   });
   users.push({ ...donor, label: "donor@demo.local", role: "DONOR" });
 
+  const donor2 = await upsertUser({
+    email: "donor2@demo.local",
+    displayName: "Asha Kulkarni",
+    role: "DONOR",
+  });
+  users.push({ ...donor2, label: "donor2@demo.local", role: "DONOR" });
+
+  const donor3 = await upsertUser({
+    email: "donor3@demo.local",
+    displayName: "Rohan Desai",
+    role: "DONOR",
+  });
+  users.push({ ...donor3, label: "donor3@demo.local", role: "DONOR" });
+
   // --- Memberships -------------------------------------------------------
   await prisma.organizationUser.upsert({
     where: { orgId_userId: { orgId: bloodBank.id, userId: bbStaff.id } },
@@ -236,6 +274,112 @@ async function main(): Promise<number> {
     where: { userId: donor.id },
     update: {},
     create: { userId: donor.id }, // platform defaults: inApp+email on, descriptive off
+  });
+
+  // --- Emergency donor network profiles ---------------------------------
+  // Phones are stored through the same encrypt+hash path as production. One
+  // donor is deliberately inside the repeat-donation deferral window so the
+  // eligibility filter is exercised by the demo.
+  const { phoneHashKey, encryptPhone } = await import("@/lib/phone");
+  const networkDonors = [
+    {
+      userId: donor.id,
+      bloodGroup: "O+",
+      phone: "+919800000001",
+      latitude: 18.5207,
+      longitude: 73.8565,
+      locationLabel: "Central Pune (demo)",
+      notifyRadiusKm: 15,
+      lastDonationAt: new Date(Date.now() - 130 * 86_400_000),
+    },
+    {
+      userId: donor2.id,
+      bloodGroup: "A+",
+      phone: "+919800000002",
+      latitude: 18.529,
+      longitude: 73.856,
+      locationLabel: "Deccan (demo)",
+      notifyRadiusKm: 25,
+      lastDonationAt: new Date(Date.now() - 200 * 86_400_000),
+    },
+    {
+      userId: donor3.id,
+      bloodGroup: "O-",
+      phone: "+919800000003",
+      latitude: 18.54,
+      longitude: 73.89,
+      locationLabel: "East Pune (demo)",
+      notifyRadiusKm: 50,
+      // Donated 30 days ago → deferred by the 90-day rule; excluded from matching.
+      lastDonationAt: new Date(Date.now() - 30 * 86_400_000),
+    },
+  ];
+  for (const nd of networkDonors) {
+    const networkData = {
+      bloodGroup: nd.bloodGroup,
+      phoneHash: phoneHashKey(nd.phone),
+      phoneEncrypted: encryptPhone(nd.phone),
+      phoneVerifiedAt: new Date(),
+      latitude: nd.latitude,
+      longitude: nd.longitude,
+      locationLabel: nd.locationLabel,
+      available: true,
+      notifyRadiusKm: nd.notifyRadiusKm,
+      lastDonationAt: nd.lastDonationAt,
+      onboardedAt: new Date(),
+    };
+    await prisma.donorProfile.upsert({
+      where: { userId: nd.userId },
+      update: networkData, // synthetic demo values — re-running the seed restores them
+      create: { userId: nd.userId, ...networkData },
+    });
+    await prisma.notificationPreference.upsert({
+      where: { userId: nd.userId },
+      update: { sms: true },
+      create: { userId: nd.userId, sms: true },
+    });
+  }
+
+  // --- Demo camps (one approved + upcoming, one awaiting verification) ---
+  await prisma.camp.upsert({
+    where: { id: "seed-camp-1" },
+    update: { status: "APPROVED" },
+    create: {
+      id: "seed-camp-1",
+      orgId: bloodBank.id,
+      name: "Weekend Donation Drive (demo)",
+      description: "Synthetic demo camp at the blood centre — every Saturday.",
+      venue: "Seva Blood Centre, Central Pune",
+      city: "Pune",
+      state: "Maharashtra",
+      latitude: 18.5204,
+      longitude: 73.8567,
+      startsAt: new Date(Date.now() + 3 * 86_400_000),
+      endsAt: new Date(Date.now() + 3 * 86_400_000 + 8 * 3_600_000),
+      status: "APPROVED",
+      createdById: bbStaff.id,
+      approvedById: admin.id,
+      approvedAt: new Date(),
+    },
+  });
+  await prisma.camp.upsert({
+    where: { id: "seed-camp-2" },
+    update: {},
+    create: {
+      id: "seed-camp-2",
+      orgId: eastBloodBank.id,
+      name: "Corporate Campus Drive (demo)",
+      description: "Awaiting platform-admin verification — invisible on /camps until approved.",
+      venue: "Riverside Blood Bank",
+      city: "Pune",
+      state: "Maharashtra",
+      latitude: 18.5503,
+      longitude: 73.9402,
+      startsAt: new Date(Date.now() + 10 * 86_400_000),
+      endsAt: new Date(Date.now() + 10 * 86_400_000 + 6 * 3_600_000),
+      status: "PENDING_APPROVAL",
+      createdById: bbStaff.id,
+    },
   });
 
   // --- TOTP secrets for privileged demo accounts --------------------------
@@ -306,19 +450,76 @@ async function main(): Promise<number> {
   await ensureIntegration(bloodBank.id, bloodBank.name, "MOCK_BLOOD_BANK");
   await ensureIntegration(hospital.id, hospital.name, "MOCK_HOSPITAL");
 
+  // --- Demo inventory (drives the real ops services, staggered expiry) ----
+  // Deterministic external ids keep re-runs idempotent. expiresAt is then
+  // staggered directly: it is a denormalized inventory fact, not an event.
+  const { recordDonation, completeProcessing, createComponents } = await import(
+    "@/lib/services/bloodbank-ops"
+  );
+  const DAY_MS = 86_400_000;
+  const inventorySpec = [
+    { externalDonationId: "seed-inv-1", bloodGroup: "O+", expiresInDays: 3, comps: [{ componentType: "RBC", externalComponentId: "seed-rbc-1" }] },
+    { externalDonationId: "seed-inv-2", bloodGroup: "O-", expiresInDays: 12, comps: [{ componentType: "RBC", externalComponentId: "seed-rbc-2" }] },
+    { externalDonationId: "seed-inv-3", bloodGroup: "A+", expiresInDays: 22, comps: [{ componentType: "RBC", externalComponentId: "seed-rbc-3" }, { componentType: "PLASMA", externalComponentId: "seed-plasma-3" }] },
+    { externalDonationId: "seed-inv-4", bloodGroup: "B+", expiresInDays: 41, comps: [{ componentType: "RBC", externalComponentId: "seed-rbc-4" }] },
+    { externalDonationId: "seed-inv-5", bloodGroup: "AB+", expiresInDays: 4, comps: [{ componentType: "PLATELET", externalComponentId: "seed-plt-5" }] },
+    { externalDonationId: "seed-inv-6", bloodGroup: "O+", expiresInDays: 18, comps: [{ componentType: "RBC", externalComponentId: "seed-rbc-6" }] },
+  ];
+  let inventoryUnits = 0;
+  for (const spec of inventorySpec) {
+    const existing = await prisma.donation.findUnique({
+      where: {
+        organizationId_externalDonationId: {
+          organizationId: bloodBank.id,
+          externalDonationId: spec.externalDonationId,
+        },
+      },
+      select: { id: true },
+    });
+    if (existing) continue;
+    const { donationId } = await recordDonation(
+      {
+        organizationId: bloodBank.id,
+        externalDonationId: spec.externalDonationId,
+        bloodGroup: spec.bloodGroup,
+        donatedAt: new Date(),
+        facilityCode: "SBC-LAB",
+      },
+      { ingestedByUserId: null }
+    );
+    await completeProcessing({ organizationId: bloodBank.id, donationId });
+    const { componentIds } = await createComponents(
+      { organizationId: bloodBank.id, donationId, components: spec.comps },
+      { ingestedByUserId: null }
+    );
+    for (const cid of componentIds) {
+      await prisma.bloodComponent.update({
+        where: { id: cid },
+        data: { expiresAt: new Date(Date.now() + spec.expiresInDays * DAY_MS) },
+      });
+      inventoryUnits += 1;
+    }
+  }
+  if (inventoryUnits > 0) {
+    console.log(`[seed] demo inventory: ${inventoryUnits} live units at ${bloodBank.name}`);
+  }
+
   // --- Summary table ------------------------------------------------------
   const counts = {
     organizations: await prisma.organization.count(),
     facilities: await prisma.facility.count(),
     users: await prisma.user.count(),
     integrations: await prisma.integration.count(),
+    networkDonors: await prisma.donorProfile.count({ where: { phoneVerifiedAt: { not: null } } }),
+    camps: await prisma.camp.count(),
   };
 
   console.log("");
   console.log("=== Demo seed summary (SYNTHETIC DATA — not real people or facilities) ===");
   const rows: Array<[string, string]> = [
-    ["Organization", `${bloodBank.name} (BLOOD_BANK, ACTIVE)`],
-    ["Organization", `${hospital.name} (HOSPITAL, ACTIVE)`],
+    ["Organization", `${bloodBank.name} (BLOOD_BANK, ACTIVE, Central Pune)`],
+    ["Organization", `${hospital.name} (HOSPITAL, ACTIVE, Central Pune)`],
+    ["Organization", `${eastBloodBank.name} (BLOOD_BANK, ACTIVE, East Pune)`],
     ["Facility", `Seva Blood Centre / Main Lab [SBC-LAB] PROCESSING_LAB`],
     ["Facility", `City General Hospital / Main Campus [MAIN -> CGH-MAIN] HOSPITAL`],
     ...users.map(
@@ -326,7 +527,11 @@ async function main(): Promise<number> {
     ),
     ["Membership", `bb-staff@demo.local ORG_ADMIN @ Seva Blood Centre`],
     ["Membership", `hosp-staff@demo.local ORG_ADMIN @ City General Hospital`],
-    ["DonorProfile", `donor@demo.local blood group O+ (default notification prefs)`],
+    ["DonorProfile", `donor@demo.local O+ network donor (+91••••0001, Central Pune)`],
+    ["DonorProfile", `donor2@demo.local A+ network donor (+91••••0002, Deccan)`],
+    ["DonorProfile", `donor3@demo.local O- network donor (+91••••0003, deferred — donated 30d ago)`],
+    ["Camp", `Weekend Donation Drive (APPROVED, visible on /camps)`],
+    ["Camp", `Corporate Campus Drive (PENDING_APPROVAL, needs admin verification)`],
     ...integrations.map(
       (i): [string, string] => [
         i.created ? "Integration NEW" : "Integration",
@@ -352,7 +557,8 @@ async function main(): Promise<number> {
   console.log("");
   console.log(
     `  Totals in DB: ${counts.organizations} orgs, ${counts.facilities} facilities, ` +
-      `${counts.users} users, ${counts.integrations} integrations`
+      `${counts.users} users, ${counts.integrations} integrations, ` +
+      `${counts.networkDonors} network donors, ${counts.camps} camps`
   );
   console.log("=== Seed complete ===");
 

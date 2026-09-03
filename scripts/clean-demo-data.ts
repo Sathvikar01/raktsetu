@@ -51,6 +51,14 @@ async function main(): Promise<number> {
     "bloodComponent",
     "externalIdentifier",
     "donation",
+    // Emergency-network artifacts: matches reference requests (FK-safe:
+    // matches and events cascade on request delete, so requests go last).
+    "campRegistration",
+    "camp",
+    "otpChallenge",
+    "emergencyMatch",
+    "emergencyRequestEvent",
+    "emergencyRequest",
     "notification",
     "outboxEmail",
   ] as const;
