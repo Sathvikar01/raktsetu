@@ -6,6 +6,9 @@ import { MobileNav, DesktopNav, type NavLinkItem } from "./NavLinks";
 export function SiteHeader() {
   const d = getDictionary();
   const links: NavLinkItem[] = [
+    { href: "/emergency", label: d.nav.emergency },
+    { href: "/camps", label: d.nav.camps },
+    { href: "/eligibility", label: d.nav.eligibility },
     { href: "/how-it-works", label: d.nav.howItWorks },
     { href: "/community-impact", label: d.nav.communityImpact },
     { href: "/partners", label: d.nav.partners },
