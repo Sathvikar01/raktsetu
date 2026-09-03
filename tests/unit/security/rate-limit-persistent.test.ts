@@ -61,10 +61,14 @@ describe("rateLimitPersistent", () => {
 
   it("starts a fresh window after windowMs", async () => {
     const key = `t2:${Date.now()}`;
-    await rateLimitPersistent(key, 1, 50);
-    expect((await rateLimitPersistent(key, 1, 50)).ok).toBe(false);
-    await new Promise((r) => setTimeout(r, 70));
-    expect((await rateLimitPersistent(key, 1, 50)).ok).toBe(true);
+    // Window is generous relative to SQLite latency under a loaded suite:
+    // a too-tight window makes the second charge land in a NEW window and
+    // flakes on slow machines — the semantics under test are the reset, not
+    // millisecond precision.
+    await rateLimitPersistent(key, 1, 500);
+    expect((await rateLimitPersistent(key, 1, 500)).ok).toBe(false);
+    await new Promise((r) => setTimeout(r, 650));
+    expect((await rateLimitPersistent(key, 1, 500)).ok).toBe(true);
   });
 });
 
