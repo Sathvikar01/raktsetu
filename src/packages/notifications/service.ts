@@ -21,13 +21,20 @@ export interface DonorNotificationInput {
   bodyParams?: Record<string, string | number>;
   relatedDonationId?: string | null;
   relatedComponentId?: string | null;
+  /**
+   * Reminder-class notifications (eligibility nudges) carry zero
+   * recipient-derived content, so PI-11's generic-lockdown doesn't apply —
+   * they may render specific copy on every channel regardless of the
+   * descriptive-content preference. Never set this for lifecycle updates.
+   */
+  alwaysDescriptive?: boolean;
 }
 
 export async function dispatchDonorNotification(input: DonorNotificationInput): Promise<void> {
   const pref = await prisma.notificationPreference.findUnique({ where: { userId: input.userId } });
   const inApp = pref?.inApp ?? true;
   const email = pref?.email ?? true;
-  const descriptiveAllowed = pref?.descriptiveContent ?? false;
+  const descriptiveAllowed = (pref?.descriptiveContent ?? false) || input.alwaysDescriptive === true;
 
   const channels: string[] = [];
   const locale = (pref?.locale as Locale) ?? "en";

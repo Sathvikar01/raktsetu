@@ -624,6 +624,7 @@ export async function recomputeDerivedComponentState(componentId: string): Promi
     where: { id: componentId },
     data: {
       currentDerivedState: result.state ?? "PREPARING",
+      locationFacilityId: result.lastFacilityId,
       derivedAt: new Date(),
     },
   });

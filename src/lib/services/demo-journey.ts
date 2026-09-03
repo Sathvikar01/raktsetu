@@ -50,6 +50,7 @@ export async function runDemoJourney(): Promise<DemoJourneyResult> {
       organizationId: bb.id,
       externalDonationId: `demo-${suffix}`,
       din: `DEMO-DIN-${suffix}`,
+      bloodGroup: "O+",
       donatedAt,
       facilityCode: BB_FACILITY_CODE,
     },

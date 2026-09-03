@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/packages/database/client";
 import { ingestEvent, type IngestContext, type IngestResult } from "@/lib/services/ingest";
 import type { InboundEvent } from "@/packages/schemas/ingestion";
+import { BLOOD_GROUPS, type BloodGroup } from "@/packages/schemas/events";
+import { computeExpiry } from "@/packages/domain/shelf-life";
 
 /**
  * Blood-bank staff/demo operations. Every state change builds an InboundEvent
@@ -62,7 +64,7 @@ async function bloodBankContext(organizationId: string, actor?: OpsActor): Promi
 async function loadOwnedDonation(donationId: string, organizationId: string) {
   const donation = await prisma.donation.findUnique({
     where: { id: donationId },
-    select: { id: true, externalDonationId: true, organizationId: true },
+    select: { id: true, externalDonationId: true, organizationId: true, bloodGroup: true },
   });
   if (!donation || donation.organizationId !== organizationId) {
     // Deliberately generic — do not reveal other tenants' donations.
@@ -90,6 +92,7 @@ export interface RecordDonationInput {
   organizationId: string;
   externalDonationId: string;
   din?: string | null;
+  bloodGroup?: string | null;
   donatedAt: Date | string;
   facilityCode?: string | null;
 }
@@ -101,6 +104,9 @@ export async function recordDonation(
   const ctx = await bloodBankContext(input.organizationId, actor);
   const externalDonationId = input.externalDonationId.trim();
   if (!externalDonationId) throw new OpsValidationError("externalDonationId is required");
+  if (input.bloodGroup && !BLOOD_GROUPS.includes(input.bloodGroup as BloodGroup)) {
+    throw new OpsValidationError("unknown bloodGroup");
+  }
 
   const clash = await prisma.donation.findUnique({
     where: {
@@ -128,6 +134,7 @@ export async function recordDonation(
       organizationId: input.organizationId,
       externalDonationId,
       din: input.din ?? null,
+      bloodGroup: input.bloodGroup ?? null,
       donatedAt: new Date(donatedAtIso),
       linkStatus: "UNLINKED", // linkCode uses the schema cuid default — issued to the donor as-is
       recordedVia: "MANUAL",
@@ -253,12 +260,16 @@ export async function createComponents(
     });
     if (clash) throw new OpsValidationError(`externalComponentId ${externalComponentId} already exists`);
 
+    const preparedAt = new Date();
     const component = await prisma.bloodComponent.create({
       data: {
         donationId: donation.id,
         componentType: spec.componentType,
         externalComponentId,
-        preparedAt: new Date(),
+        // Inventory facts denormalized at creation (events remain the truth).
+        bloodGroup: donation.bloodGroup,
+        expiresAt: computeExpiry(spec.componentType, preparedAt),
+        preparedAt,
       },
     });
     await prisma.externalIdentifier.create({

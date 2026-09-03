@@ -4,6 +4,7 @@ import { prisma } from "@/packages/database/client";
 import { hashPassword, verifyPassword, passwordIssues } from "@/lib/auth/passwords";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { recordAudit } from "@/lib/audit";
+import { dispatchDonorNotification } from "@/packages/notifications/service";
 import {
   hashedLimitKey,
   peekRateLimitPersistent,
@@ -212,6 +213,16 @@ export async function linkDonationToDonor(
   await recordAudit({
     actorType: "USER", actorId: userId, action: "donation.linked",
     resourceType: "Donation", resourceId: donation.id, orgId: donation.organizationId,
+  });
+  // Linking is the donor's first meaningful moment in the app — welcome them
+  // in, and let them know the journey view is now live.
+  await dispatchDonorNotification({
+    userId,
+    typeKey: "notify.donation.linked",
+    genericTitle: true,
+    titleKey: "notify.genericUpdateTitle",
+    bodyKey: "notify.linkedBody",
+    relatedDonationId: donation.id,
   });
   return { ok: true };
 }
