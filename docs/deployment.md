@@ -31,13 +31,20 @@ npm run db:use:postgres          # switch to postgresql + push (needs DATABASE_U
 Two supported production shapes:
 
 - **Vercel** (this repository ships `vercel.json`): the platform runs the app;
-  bring your own PostgreSQL 16 and set the environment variables below. A
-  daily cron calls `/api/cron/outbox`; protect it with `CRON_SECRET`.
+  bring your own PostgreSQL 16 and set the environment variables below. The
+  cron calls `/api/cron/outbox` every 15 minutes (outbox email drain + the
+  inventory auto-expiry sweep) and `/api/cron/emergency` every 5 minutes
+  (emergency-request expiry/advancement + camp auto-completion); protect both
+  with `CRON_SECRET`. Vercel's Hobby plan only supports daily cron schedules —
+  on Hobby either keep the daily schedule or call the endpoints from an
+  external pinger with the same bearer secret.
 - **Self-managed**: run PostgreSQL 16 via docker-compose (`docker compose up -d db`
-  uses the committed compose file, service name `db`) and the Next.js app on a
-  Node host or your own container image (no Dockerfile is shipped — build one
-  from `next build` output or use `next start`). Behind a reverse proxy that
-  terminates TLS.
+  uses the committed compose file, service name `db`) and the Next.js app via
+  the shipped Dockerfile (`docker compose --profile app up -d` or any container
+  host). Behind a reverse proxy that terminates TLS. Schedule
+  `npm run maintenance` (outbox + expiry + reminders + emergency + camp sweeps)
+  every 15 minutes, or hit `/api/cron/outbox` and `/api/cron/emergency` with
+  the `CRON_SECRET` bearer token.
 
 ```powershell
 # database only, from the repository root:
@@ -97,7 +104,7 @@ Set in `.env` or compose `environment:` (never bake secrets into images).
 | `APP_URL` / `NEXT_PUBLIC_APP_URL` | **yes in prod** | localhost (dev only) | Canonical absolute origin for emailed links and metadata. Production boot/build fails on a missing value or a localhost origin. |
 | `EMAIL_PROVIDER` | no | `console` | `console` logs auth mail; `resend` delivers it via RESEND_API_KEY + EMAIL_FROM. Verification/reset mail is sent inline; outbox rows back retries. |
 | `REQUIRE_ADMIN_MFA` | no | ON in prod | TOTP second factor for ORG_STAFF / ORG_ADMIN / PLATFORM_ADMIN sign-ins. Set `false` only on pure-demo deployments. |
-| `CRON_SECRET` | yes with Vercel cron | unset | Bearer token guarding `/api/cron/outbox`. |
+| `CRON_SECRET` | yes with Vercel cron | unset | Bearer token guarding `/api/cron/outbox` and `/api/cron/emergency`. |
 | `PRIVACY_MIN_COHORT` | no | `5` | k-anonymity floor for LIMITED_ANON disclosure rendering. |
 | `PRIVACY_MIN_AGGREGATE` | no | `10` | Suppression floor for public aggregate statistics. |
 | `SESSION_TTL_DAYS` | no | `30` | Session lifetime. Shorten for higher-assurance deployments. |
