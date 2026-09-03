@@ -19,6 +19,7 @@
     "seed": "tsx scripts/seed.ts",
     "db:clean": "tsx scripts/clean-demo-data.ts",
     "outbox:process": "tsx scripts/process-outbox.ts",
+    "maintenance": "tsx scripts/maintenance.ts",
     "mfa:backfill": "tsx scripts/backfill-mfa-secrets.ts",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed"
