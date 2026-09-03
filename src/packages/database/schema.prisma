@@ -63,8 +63,25 @@ model DonorProfile {
   phone           String? // optional, minimized; only for notification delivery if opted in
   preferredLocale String   @default("en")
   createdAt       DateTime @default(now())
+  // ---------------------------------------------------------------------------
+  // Emergency donor-network fields. Phone is stored BOTH encrypted (AES-256-GCM,
+  // delivery only) and hashed (HMAC, lookup/throttle) — it is never rendered in
+  // any donor-facing surface. Coordinates are quantized to ~1km at write time.
+  // ---------------------------------------------------------------------------
+  phoneHash       String? // HMAC-SHA256 of normalized E.164 — dedupe/lookup, irreversible
+  phoneEncrypted  String? // AES-256-GCM(APP_SECRET) — decrypted only for dispatch
+  phoneVerifiedAt DateTime?
+  latitude        Float? // quantized (~1km grid); approximate by construction
+  longitude       Float?
+  locationLabel   String? // user-chosen coarse label e.g. "Kothrud, Pune"
+  available       Boolean  @default(true) // master availability switch (pause = false)
+  pausedAt        DateTime?
+  notifyRadiusKm  Int      @default(15) // how far the donor is willing to be notified
+  lastDonationAt  DateTime? // self-reported until a LINKED donation supersedes it
+  onboardedAt     DateTime?
 
-  donations Donation[]
+  donations        Donation[]
+  emergencyMatches EmergencyMatch[]
 }
 
 model Session {
@@ -98,6 +115,10 @@ model Organization {
   kind        String // BLOOD_BANK | HOSPITAL | BLOOD_BANK_AND_HOSPITAL
   status      String   @default("PENDING_APPROVAL") // PENDING_APPROVAL | ACTIVE | SUSPENDED
   regionLabel String? // coarse public-safe label e.g. "Pune, Maharashtra"
+  // Public facility coordinates — blood banks are public places, so a coarse
+  // (2-decimal, ~1km) geolocation is safe to publish and powers nearby search.
+  latitude    Float?
+  longitude   Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -107,6 +128,11 @@ model Organization {
   lifecycleEvents LifecycleEvent[]
   integrations    Integration[]
   recipientRefs   RecipientContext[]
+  requestsMade    BloodRequest[]     @relation("requestsMade")
+  requestsReceived BloodRequest[]    @relation("requestsReceived")
+  invites         OrgInvite[]
+  camps           Camp[]
+  emergencyMatches EmergencyMatch[]
 }
 
 model Facility {
@@ -153,6 +179,24 @@ model PartnerRequest {
   @@index([status, createdAt])
 }
 
+// One-time organization-admin invite issued when a partner request is approved.
+// Token is stored hashed (like password/email reset tokens); the plaintext is
+// only ever in the invite email.
+model OrgInvite {
+  id          String    @id @default(uuid())
+  email       String
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  role        String    @default("ORG_ADMIN") // ORG_ADMIN | ORG_STAFF
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  invitedById String?
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+}
+
 // ---------------------------------------------------------------------------
 // Donations, identifiers, components, lineage
 // ---------------------------------------------------------------------------
@@ -166,6 +210,7 @@ model Donation {
   facilityId       String?
   externalDonationId String // blood bank's own donation/unit id
   din              String? // ISBT 128 Donation Identification Number when present
+  bloodGroup       String? // ABO/Rh of the unit as recorded by the blood bank (BLOOD_GROUPS)
   donatedAt        DateTime
   linkStatus       String   @default("UNLINKED") // UNLINKED | LINKED | REVOKED
   linkCode         String   @unique @default(cuid())
@@ -196,6 +241,10 @@ model BloodComponent {
   donation           Donation @relation(fields: [donationId], references: [id])
   componentType      String // RBC | PLASMA | PLATELET | WHOLE_BLOOD | OTHER
   externalComponentId String?
+  // Denormalized inventory facts (events remain the source of truth):
+  bloodGroup         String?  // copied from the donation at creation
+  expiresAt          DateTime? // computed from shelf life at creation (domain/shelf-life)
+  locationFacilityId String?  // derived cache: facility of the last verified event
   preparedAt         DateTime?
   currentDerivedState String  @default("PREPARING") // derived cache; events are truth
   derivedAt          DateTime?
@@ -205,8 +254,50 @@ model BloodComponent {
   lineageParents    ComponentLineage[] @relation("child")
   lineageChildren   ComponentLineage[] @relation("parent")
   recipientContexts RecipientContext[]
+  requestFulfillments RequestFulfillment[]
 
   @@unique([donationId, componentType])
+  @@index([currentDerivedState, expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Hospital -> blood bank unit requests (activates COMPONENT_RESERVED)
+// ---------------------------------------------------------------------------
+
+model BloodRequest {
+  id              String   @id @default(uuid())
+  requestNumber   String   @unique @default(cuid())
+  requestingOrgId String
+  requestingOrg   Organization @relation("requestsMade", fields: [requestingOrgId], references: [id])
+  targetOrgId     String
+  targetOrg       Organization @relation("requestsReceived", fields: [targetOrgId], references: [id])
+  componentType   String // RBC | PLASMA | PLATELET | WHOLE_BLOOD | OTHER
+  bloodGroup      String // ABO/Rh (BLOOD_GROUPS)
+  unitsRequested  Int
+  urgency         String   @default("ROUTINE") // ROUTINE | URGENT | EMERGENCY
+  note            String? // free-text clinical context is discouraged — keep coarse
+  status          String   @default("PENDING") // PENDING | FULFILLED | DECLINED | CANCELLED
+  declineReason   String?
+  requestedById   String? // User.id of the hospital staff member who raised it
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  fulfillments RequestFulfillment[]
+
+  @@index([targetOrgId, status, createdAt])
+  @@index([requestingOrgId, status, createdAt])
+}
+
+model RequestFulfillment {
+  id             String @id @default(uuid())
+  requestId      String
+  request        BloodRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  componentId    String
+  component      BloodComponent @relation(fields: [componentId], references: [id])
+  createdByOrgId String // the blood bank that reserved the unit
+  createdAt      DateTime @default(now())
+
+  @@unique([requestId, componentId])
 }
 
 model ComponentLineage {
@@ -340,6 +431,7 @@ model NotificationPreference {
   whatsapp                Boolean @default(false)
   push                    Boolean @default(false)
   descriptiveContent      Boolean @default(false) // opt-in to more descriptive bodies
+  donationReminders       Boolean @default(false) // opt-in one-shot "likely eligible again" reminder per donation
   locale                  String  @default("en")
 }
 
@@ -420,6 +512,155 @@ model AuditLog {
   @@index([orgId, createdAt])
 }
 
+
+// ---------------------------------------------------------------------------
+// Public emergency blood discovery — request lifecycle, bank/donor matches
+// Lifecycle: PENDING -> SEARCHING_BANKS -> SEARCHING_DONORS -> DONOR_FOUND ->
+// FULFILLED, with EXPIRED / CANCELLED exits. Donor matches are privacy-first:
+// requester-facing surfaces expose blood group + approximate distance only
+// until the donor accepts.
+// ---------------------------------------------------------------------------
+
+model EmergencyRequest {
+  id              String   @id @default(uuid())
+  requestNumber   String   @unique @default(cuid())
+  publicToken     String   @unique // random; authorizes public status polling without login
+  componentType   String // RBC | PLASMA | PLATELET | WHOLE_BLOOD | OTHER
+  bloodGroup      String // recipient ABO/Rh (BLOOD_GROUPS)
+  unitsRequested  Int
+  urgency         String // ROUTINE | URGENT | EMERGENCY
+  status          String   @default("PENDING") // PENDING | SEARCHING_BANKS | SEARCHING_DONORS | DONOR_FOUND | FULFILLED | EXPIRED | CANCELLED
+  hospitalName    String
+  city            String
+  latitude        Float?
+  longitude       Float?
+  contactName     String
+  contactPhoneHash     String // HMAC of normalized E.164 — dedupe/lookup
+  contactPhoneEncrypted String // AES-256-GCM(APP_SECRET) — decrypted only to call the requester back
+  phoneVerifiedAt DateTime? // set when OTP verification consumed at creation
+  requesterUserId String? // optional logged-in account for in-app updates
+  radiusKm        Int? // current donor-search radius (progressive expansion)
+  radiusRound     Int      @default(0) // index into the urgency's radius ladder
+  lastDonorScanAt DateTime? // anchors the per-round dwell before widening again
+  moderationStatus String  @default("CLEAR") // CLEAR | FLAGGED | BLOCKED
+  flagReason      String?
+  expiresAt       DateTime
+  fulfilledAt     DateTime?
+  fulfilledSource String? // BANK_INVENTORY | DONOR_ACCEPTED | REQUESTER_CONFIRMED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events  EmergencyRequestEvent[]
+  matches EmergencyMatch[]
+
+  @@index([status, expiresAt])
+  @@index([contactPhoneHash, createdAt])
+}
+
+// Append-only stage timeline powering the real-time status view.
+model EmergencyRequestEvent {
+  id         String           @id @default(uuid())
+  requestId  String
+  request    EmergencyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  stage      String // mirrors status keys + SEARCH_HINTS stages
+  detailJson String? // sanitized, non-identifying detail only
+  createdAt  DateTime         @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+model EmergencyMatch {
+  id             String   @id @default(uuid())
+  requestId      String
+  request        EmergencyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  kind           String // BANK | DONOR
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  donorProfileId String?
+  donorProfile   DonorProfile?  @relation(fields: [donorProfileId], references: [id])
+  bloodGroup     String // donor's group (banks: group of the units found)
+  unitsAvailable Int? // BANK matches only
+  distanceKm     Float?
+  radiusKm       Int? // radius at which this match was created
+  status         String   @default("NOTIFIED") // BANK: LISTED ; DONOR: NOTIFIED | ACCEPTED | DECLINED | EXPIRED
+  notifiedAt     DateTime?
+  respondedAt    DateTime?
+  acceptedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  @@unique([requestId, organizationId])
+  @@unique([requestId, donorProfileId])
+  @@index([donorProfileId, status])
+  @@index([organizationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Mobile OTP verification (donor onboarding + emergency requests)
+// Codes are stored hashed; verification issues a one-time verification token
+// consumed by the downstream mutation. Throttling lives in RateLimitBucket.
+// ---------------------------------------------------------------------------
+
+model OtpChallenge {
+  id             String    @id @default(uuid())
+  purpose        String // DONOR_PHONE | EMERGENCY_REQUEST
+  phoneHash      String // HMAC of normalized E.164
+  codeHash       String // SHA-256 over APP_SECRET-peppered code
+  attempts       Int       @default(0)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  verifiedTokenHash String? // issued when a code verifies; one-time use
+  verifiedTokenExpiresAt DateTime?
+  verifiedTokenUsedAt    DateTime?
+  ipHash         String?
+  createdAt      DateTime  @default(now())
+
+  @@index([phoneHash, purpose, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Blood donation camps — discovery (public) + verification (platform admins)
+// ---------------------------------------------------------------------------
+
+model Camp {
+  id             String   @id @default(uuid())
+  orgId          String // verified organizer (ACTIVE organization)
+  org            Organization @relation(fields: [orgId], references: [id])
+  name           String
+  description    String?
+  venue          String
+  city           String
+  state          String?
+  latitude       Float?
+  longitude      Float?
+  startsAt       DateTime
+  endsAt         DateTime
+  status         String   @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | CANCELLED | COMPLETED
+  createdById    String
+  approvedById   String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  registrations CampRegistration[]
+
+  @@index([status, startsAt])
+  @@index([orgId, startsAt])
+}
+
+model CampRegistration {
+  id               String @id @default(uuid())
+  campId           String
+  camp             Camp   @relation(fields: [campId], references: [id], onDelete: Cascade)
+  userId           String? // logged-in donor registration (unique per camp)
+  name             String
+  contactPhoneHash String?
+  headcount        Int    @default(1)
+  createdAt        DateTime @default(now())
+
+  @@unique([campId, userId])
+  @@index([campId, createdAt])
+}
 
 // ---------------------------------------------------------------------------
 // Persistent rate limiting (multi-instance safe)
