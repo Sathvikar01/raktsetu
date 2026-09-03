@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n";
 
 const ITEMS = [
   { href: "/dashboard", navKey: "dashboard" },
+  { href: "/dashboard/requests", navKey: "donorRequests" },
   { href: "/dashboard/notifications", navKey: "notifications" },
   { href: "/dashboard/data", navKey: "yourData" },
   { href: "/dashboard/settings", navKey: "settings" },

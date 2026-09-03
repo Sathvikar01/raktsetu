@@ -17,6 +17,8 @@ import { revokeConsentAction } from "../actions";
 import { DONOR_CONSENT_PURPOSES, type DonorConsentPurpose } from "../types";
 import { NotificationPrefsForm } from "../components/NotificationPrefsForm";
 import { ConsentGrantForm } from "../components/ConsentGrantForm";
+import { DonorNetworkForm } from "../components/DonorNetworkForm";
+import { getDonorNetworkProfile } from "@/lib/services/donor-network";
 
 export function generateMetadata(): Metadata {
   const d = getDictionary();
@@ -46,12 +48,13 @@ export default async function SettingsPage() {
   const user = await requireRole("DONOR");
   const d = getDictionary();
 
-  const [prefs, consents] = await Promise.all([
+  const [prefs, consents, networkProfile] = await Promise.all([
     prisma.notificationPreference.findUnique({ where: { userId: user.id } }),
     prisma.consentRecord.findMany({
       where: { subjectType: "DONOR_PLATFORM", subjectRef: user.id },
       orderBy: [{ grantedAt: "desc" }, { id: "desc" }],
     }),
+    getDonorNetworkProfile(user.id),
   ]);
 
   const defaults = {
@@ -61,6 +64,7 @@ export default async function SettingsPage() {
     whatsapp: prefs?.whatsapp ?? false,
     push: prefs?.push ?? false,
     descriptiveContent: prefs?.descriptiveContent ?? false,
+    donationReminders: prefs?.donationReminders ?? false,
     locale: prefs?.locale ?? DEFAULT_LOCALE,
   };
 
@@ -95,6 +99,16 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold tracking-tight text-ink">{d.nav.settings}</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{d.donor.networkTitle}</CardTitle>
+          <p className="mt-1 text-sm text-ink-soft">{d.donor.networkIntro}</p>
+        </CardHeader>
+        <CardBody>
+          <DonorNetworkForm profile={networkProfile} />
+        </CardBody>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

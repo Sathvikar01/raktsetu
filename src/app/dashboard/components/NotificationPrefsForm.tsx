@@ -15,16 +15,21 @@ export interface NotificationPrefsDefaults {
   whatsapp: boolean;
   push: boolean;
   descriptiveContent: boolean;
+  donationReminders: boolean;
   locale: string;
 }
 
-const CHANNELS = [
+type ChannelName = "inApp" | "email" | "sms" | "whatsapp" | "push";
+
+const CHANNELS: Array<{ name: ChannelName; labelKey: string; comingSoon?: boolean }> = [
   { name: "inApp", labelKey: "channelInApp" },
   { name: "email", labelKey: "channelEmail" },
-  { name: "sms", labelKey: "channelSms" },
-  { name: "whatsapp", labelKey: "channelWhatsapp" },
-  { name: "push", labelKey: "channelPush" },
-] as const;
+  // No delivery adapters exist yet — shown as coming-soon so prefs never
+  // promise a channel that stays silent (honesty over aspiration).
+  { name: "sms", labelKey: "channelSms", comingSoon: true },
+  { name: "whatsapp", labelKey: "channelWhatsapp", comingSoon: true },
+  { name: "push", labelKey: "channelPush", comingSoon: true },
+];
 
 export function NotificationPrefsForm({ defaults }: { defaults: NotificationPrefsDefaults }) {
   const d = getDictionary();
@@ -43,16 +48,22 @@ export function NotificationPrefsForm({ defaults }: { defaults: NotificationPref
       <fieldset>
         <legend className="text-sm font-medium text-ink">{d.donor.prefsTitle}</legend>
         <div className="mt-3 space-y-2.5">
-          {CHANNELS.map(({ name, labelKey }) => (
-            <label key={name} htmlFor={`pref-${name}`} className="flex items-center gap-3 text-sm text-ink-soft">
+          {CHANNELS.map(({ name, labelKey, comingSoon }) => (
+            <label key={name} htmlFor={`pref-${name}`} className={`flex items-center gap-3 text-sm ${comingSoon ? "text-ink-faint" : "text-ink-soft"}`}>
               <input
                 id={`pref-${name}`}
                 type="checkbox"
                 name={name}
                 defaultChecked={defaults[name]}
+                disabled={comingSoon}
                 className="size-4 rounded border-ink/30 accent-teal-600"
               />
-              {d.donor[labelKey]}
+              {d.donor[labelKey as keyof typeof d.donor] as string}
+              {comingSoon ? (
+                <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-medium text-ink-faint ring-1 ring-inset ring-ink/10">
+                  {d.donor.channelComingSoon}
+                </span>
+              ) : null}
             </label>
           ))}
           <label
@@ -69,6 +80,22 @@ export function NotificationPrefsForm({ defaults }: { defaults: NotificationPref
             <span>
               {d.donor.descriptiveContent}
               <span className="block text-xs text-ink-faint">{d.donor.descriptiveHint}</span>
+            </span>
+          </label>
+          <label
+            htmlFor="pref-reminders"
+            className="flex items-center gap-3 text-sm text-ink-soft"
+          >
+            <input
+              id="pref-reminders"
+              type="checkbox"
+              name="donationReminders"
+              defaultChecked={defaults.donationReminders}
+              className="size-4 rounded border-ink/30 accent-teal-600"
+            />
+            <span>
+              {d.donor.donationReminders}
+              <span className="block text-xs text-ink-faint">{d.donor.donationRemindersHint}</span>
             </span>
           </label>
         </div>

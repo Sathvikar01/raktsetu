@@ -8,9 +8,16 @@ import { getDictionary, LOCALES } from "@/i18n";
 import { recordAudit } from "@/lib/audit";
 import { logout, linkDonationToDonor } from "@/lib/services/account";
 import { clientIpFrom } from "@/lib/rate-limit";
-import { can, requireRole } from "@/lib/rbac";
-import { CsrfError, requireCsrf } from "@/lib/auth/session";
+import { can, ForbiddenError, requireRole } from "@/lib/rbac";
+import { CsrfError, requireCsrf, verifyCsrfToken } from "@/lib/auth/session";
 import { prisma } from "@/packages/database/client";
+import { issueOtp, verifyOtp } from "@/lib/services/otp";
+import {
+  updateDonorNetworkProfile,
+  withdrawFromDonorNetwork,
+} from "@/lib/services/donor-network";
+import { respondToDonorMatch } from "@/lib/services/emergency-requests";
+import { OpsValidationError } from "@/lib/services/bloodbank-ops";
 import { DONOR_CONSENT_PURPOSES, type DonorActionState } from "./types";
 
 /**
@@ -92,6 +99,7 @@ const PrefsSchema = z.object({
   whatsapp: z.boolean(),
   push: z.boolean(),
   descriptiveContent: z.boolean(),
+  donationReminders: z.boolean(),
   locale: z.enum([...LOCALES] as [string, ...string[]]),
 });
 
@@ -118,6 +126,7 @@ export async function saveNotificationPreferencesAction(
     whatsapp: checkbox(formData, "whatsapp"),
     push: checkbox(formData, "push"),
     descriptiveContent: checkbox(formData, "descriptiveContent"),
+    donationReminders: checkbox(formData, "donationReminders"),
     locale: formData.get("locale"),
   });
   if (!parsed.success) return { ok: false, message: d.common.errorGeneric };
@@ -209,4 +218,149 @@ export async function revokeConsentAction(formData: FormData): Promise<void> {
     resourceId: record.id,
   });
   revalidatePath("/dashboard/settings");
+}
+
+// ---------------------------------------------------------------------------
+// Emergency donor network (onboarding, controls, match responses)
+// ---------------------------------------------------------------------------
+
+/** Arg-style actions below verify the CSRF cookie token from the client. */
+async function donorGate(csrfToken: string): Promise<{ userId: string; donorProfileId: string }> {
+  const user = await requireRole("DONOR");
+  if (!(await verifyCsrfToken(csrfToken))) throw new CsrfError();
+  if (!user.donorProfileId) throw new ForbiddenError();
+  return { userId: user.id, donorProfileId: user.donorProfileId };
+}
+
+export interface DonorNetworkActionState {
+  ok: boolean;
+  messageKey?: string;
+  devCode?: string;
+  verificationToken?: string;
+}
+
+export async function requestDonorPhoneOtpAction(
+  csrfToken: string,
+  phone: string
+): Promise<DonorNetworkActionState> {
+  try {
+    await donorGate(csrfToken);
+  } catch {
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+  const h = await headers();
+  const result = await issueOtp({
+    purpose: "DONOR_PHONE",
+    phone,
+    ip: clientIpFrom(h),
+  });
+  if (!result.ok) {
+    return {
+      ok: false,
+      messageKey: result.reason === "INVALID_PHONE" ? "emergency.otpInvalidPhone" : "emergency.otpRateLimited",
+    };
+  }
+  return { ok: true, devCode: result.devCode };
+}
+
+export async function verifyDonorPhoneOtpAction(
+  csrfToken: string,
+  phone: string,
+  code: string
+): Promise<DonorNetworkActionState> {
+  try {
+    await donorGate(csrfToken);
+  } catch {
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+  const result = await verifyOtp({ purpose: "DONOR_PHONE", phone, code });
+  if (!result.ok || !result.verificationToken) {
+    const keys: Record<string, string> = {
+      INVALID: "emergency.otpInvalid",
+      EXPIRED: "emergency.otpExpired",
+      LOCKED: "emergency.otpLocked",
+      NOT_FOUND: "emergency.otpNotFound",
+    };
+    return { ok: false, messageKey: keys[result.reason ?? "INVALID"] ?? "emergency.otpInvalid" };
+  }
+  return { ok: true, verificationToken: result.verificationToken };
+}
+
+export interface DonorNetworkProfileInput {
+  csrfToken: string;
+  bloodGroup?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationLabel?: string | null;
+  available?: boolean;
+  notifyRadiusKm?: number;
+  lastDonationDate?: string | null;
+  phone?: string | null;
+  phoneVerificationToken?: string | null;
+}
+
+export async function saveDonorNetworkProfileAction(
+  input: DonorNetworkProfileInput
+): Promise<DonorNetworkActionState> {
+  let userId: string;
+  let donorProfileId: string;
+  try {
+    ({ userId, donorProfileId } = await donorGate(input.csrfToken));
+  } catch {
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+  try {
+    await updateDonorNetworkProfile({
+      userId,
+      donorProfileId,
+      bloodGroup: input.bloodGroup ?? undefined,
+      latitude: input.latitude ?? undefined,
+      longitude: input.longitude ?? undefined,
+      locationLabel: input.locationLabel,
+      available: input.available,
+      notifyRadiusKm: input.notifyRadiusKm,
+      lastDonationAt: input.lastDonationDate ? new Date(input.lastDonationDate) : undefined,
+      phone: input.phone || undefined,
+      phoneVerificationToken: input.phoneVerificationToken || undefined,
+    });
+    revalidatePath("/dashboard/settings");
+    revalidatePath("/dashboard");
+    return { ok: true, messageKey: "donor.networkSaved" };
+  } catch (err) {
+    if (err instanceof OpsValidationError && err.message === "PHONE_NOT_VERIFIED") {
+      return { ok: false, messageKey: "donor.networkPhoneNotVerified" };
+    }
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+}
+
+export async function withdrawFromDonorNetworkAction(csrfToken: string): Promise<DonorNetworkActionState> {
+  let userId: string;
+  let donorProfileId: string;
+  try {
+    ({ userId, donorProfileId } = await donorGate(csrfToken));
+  } catch {
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+  await withdrawFromDonorNetwork(userId, donorProfileId);
+  revalidatePath("/dashboard/settings");
+  return { ok: true, messageKey: "donor.networkWithdrawn" };
+}
+
+export async function respondToDonorMatchAction(
+  csrfToken: string,
+  matchId: string,
+  accept: boolean
+): Promise<DonorNetworkActionState> {
+  let donorProfileId: string;
+  try {
+    ({ donorProfileId } = await donorGate(csrfToken));
+  } catch {
+    return { ok: false, messageKey: "common.errorGeneric" };
+  }
+  if (!can("DONOR", "match:respond:own")) return { ok: false, messageKey: "common.forbiddenTitle" };
+  const result = await respondToDonorMatch({ donorProfileId, matchId, accept });
+  revalidatePath("/dashboard/requests");
+  if (!result.ok) return { ok: false, messageKey: "common.errorGeneric" };
+  return { ok: true, messageKey: accept ? "donor.matchAccepted" : "donor.matchDeclined" };
 }
