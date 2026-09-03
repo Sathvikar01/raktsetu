@@ -24,3 +24,6 @@ coverage/
 .vercel/
 .vercel
 .env.production
+
+# local agent workspace state
+.zcode/

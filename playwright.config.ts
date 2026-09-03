@@ -16,7 +16,9 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  // 15s: the first server-action submission after a cold dev-server boot can
+  // wait on route compilation; 5s flaked that first assertion (CI e2e job).
+  expect: { timeout: 15_000 },
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
