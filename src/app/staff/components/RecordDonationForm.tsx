@@ -5,6 +5,7 @@ import { CsrfField } from "@/components/site/Csrf";
 import { QRCodeSVG } from "qrcode.react";
 import { Alert, buttonClasses, Card, CardBody, CardHeader, Input, Label, Select } from "@/packages/ui";
 import { getDictionary } from "@/i18n";
+import { BLOOD_GROUPS } from "@/packages/schemas/events";
 import { recordDonationAction } from "../actions";
 import type { OpsActionState, OptionItem } from "../types";
 import { CopyButton } from "./CopyButton";
@@ -43,6 +44,17 @@ export function RecordDonationForm({
             <div>
               <Label htmlFor="bb-din">{d.staff.labelDin}</Label>
               <Input id="bb-din" name="din" maxLength={64} />
+            </div>
+            <div>
+              <Label htmlFor="bb-blood-group">{d.staff.labelBloodGroup}</Label>
+              <Select id="bb-blood-group" name="bloodGroup" defaultValue="">
+                <option value="">{d.staff.bloodGroupUnknown}</option>
+                {BLOOD_GROUPS.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div>
               <Label htmlFor="bb-donated-at">{d.staff.labelDonatedAt}</Label>

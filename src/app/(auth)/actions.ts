@@ -14,9 +14,11 @@ const LoginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+// Registration reports malformed addresses as invalid_email (M8), so the
+// shape of the address matters here — login stays length-only on purpose.
 const RegisterSchema = z.object({
   displayName: z.string().trim().min(1).max(80),
-  email: EMAIL,
+  email: EMAIL.email(),
   password: z.string().min(10).max(200),
 });
 

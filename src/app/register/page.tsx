@@ -53,7 +53,9 @@ export default async function RegisterPage({
           <Alert type="error">{errorMessage}</Alert>
         </div>
       ) : null}
-      <form action={registerAction} className="space-y-5">
+      {/* noValidate: server-side branching (invalid_email vs weak_password) is
+          the error UX — native bubbles would block submit before it runs. */}
+      <form action={registerAction} className="space-y-5" noValidate>
         <div>
           <Label htmlFor="displayName">{d.common.displayName}</Label>
           <Input

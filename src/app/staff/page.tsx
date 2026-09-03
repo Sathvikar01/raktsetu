@@ -7,7 +7,11 @@ import { prisma } from "@/packages/database/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { BloodBankSection } from "./sections/BloodBankSection";
 import { HospitalSection } from "./sections/HospitalSection";
+import { InventorySection } from "./sections/InventorySection";
+import { IncomingRequestsPanel, HospitalRequestsPanel } from "./sections/BloodRequestsSection";
+import { EmergencyRequestsSection } from "./sections/EmergencyRequestsSection";
 import { RecentActivity } from "./sections/RecentActivity";
+import type { ExpiryWindow } from "@/lib/services/inventory";
 
 export const metadata: Metadata = { title: "Staff portal" };
 
@@ -54,11 +58,20 @@ function kindLabel(kind: string): string {
 export default async function StaffPage({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string }>;
+  searchParams: Promise<{
+    org?: string;
+    invType?: string;
+    invGroup?: string;
+    invState?: string;
+    invWindow?: string;
+    invQ?: string;
+    invPage?: string;
+  }>;
 }) {
   const user = await requireRole("ORG_STAFF", "ORG_ADMIN", "PLATFORM_ADMIN");
   const d = getDictionary();
-  const { org: orgParam } = await searchParams;
+  const params = await searchParams;
+  const { org: orgParam } = params;
 
   const orgs = await visibleOrganizations(user);
 
@@ -119,7 +132,27 @@ export default async function StaffPage({
 
       <div className="space-y-10">
         {showBloodBank ? <BloodBankSection organizationId={selected.id} /> : null}
+        {showBloodBank ? (
+          <InventorySection
+            organizationId={selected.id}
+            filters={{
+              componentType: params.invType || undefined,
+              bloodGroup: params.invGroup || undefined,
+              state: params.invState || undefined,
+              expiryWindow: (["expired", "week", "month", "later"] as const).includes(
+                params.invWindow as ExpiryWindow
+              )
+                ? (params.invWindow as ExpiryWindow)
+                : undefined,
+              query: params.invQ || undefined,
+              page: Number(params.invPage) || 1,
+            }}
+          />
+        ) : null}
+        {showBloodBank ? <IncomingRequestsPanel organizationId={selected.id} /> : null}
+        {showBloodBank ? <EmergencyRequestsSection organizationId={selected.id} /> : null}
         {showHospital ? <HospitalSection organizationId={selected.id} /> : null}
+        {showHospital ? <HospitalRequestsPanel organizationId={selected.id} /> : null}
         <RecentActivity organizationId={selected.id} />
       </div>
     </div>

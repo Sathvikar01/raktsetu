@@ -24,9 +24,15 @@ import {
   returnComponent,
   transfuseComponent,
 } from "@/lib/services/hospital-ops";
-import { AGE_BANDS, COMPONENT_TYPES, DISCLOSURE_LEVELS, TREATMENT_CATEGORIES } from "@/packages/schemas/events";
+import {
+  cancelBloodRequest,
+  createBloodRequest,
+  declineBloodRequest,
+  fulfillBloodRequest,
+} from "@/lib/services/requests";
+import { BLOOD_GROUPS, COMPONENT_TYPES, AGE_BANDS, DISCLOSURE_LEVELS, TREATMENT_CATEGORIES } from "@/packages/schemas/events";
 import type { OpsActionState } from "./types";
-import { gateOrgMembership, opsFailure, optionalStr, parseDateTimeLocal, str } from "./shared";
+import { gateOrgMembership, isNextRedirectError, opsFailure, optionalStr, parseDateTimeLocal, str } from "./shared";
 
 /**
  * Staff portal server actions. Deny-by-default: every action runs
@@ -68,11 +74,13 @@ export async function recordDonationAction(
         externalDonationId: z.string().trim().min(1).max(128),
         din: z.string().trim().max(64),
         facilityCode: z.string().trim().max(64),
+        bloodGroup: z.string().trim().max(3),
       }),
       {
         externalDonationId: formData.get("externalDonationId"),
         din: formData.get("din") ?? "",
         facilityCode: formData.get("facilityCode") ?? "",
+        bloodGroup: formData.get("bloodGroup") ?? "",
       }
     );
     const donatedAt = parseDateTimeLocal(str(formData, "donatedAt"));
@@ -81,6 +89,7 @@ export async function recordDonationAction(
         organizationId,
         externalDonationId: input.externalDonationId,
         din: input.din || null,
+        bloodGroup: input.bloodGroup || null,
         donatedAt,
         facilityCode: input.facilityCode || null,
       },
@@ -399,6 +408,115 @@ export async function hospitalTransfuseComponentAction(
   } catch (err) {
     return opsFailure(err);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Blood requests (hospital -> blood bank)
+// ---------------------------------------------------------------------------
+
+export async function createBloodRequestAction(
+  _prev: OpsActionState | null,
+  formData: FormData
+): Promise<OpsActionState> {
+  const organizationId = str(formData, "organizationId");
+  let userId: string;
+  try {
+    await requireCsrf(formData);
+    userId = await staffGate(organizationId);
+  } catch (err) {
+    return opsFailure(err);
+  }
+  try {
+    const input = parsed(
+      z.object({
+        targetOrgId: z.string().uuid(),
+        componentType: z.enum(COMPONENT_TYPES),
+        bloodGroup: z.enum(BLOOD_GROUPS),
+        unitsRequested: z.coerce.number().int().min(1).max(20),
+        urgency: z.enum(["ROUTINE", "URGENT", "EMERGENCY"]),
+        note: z.string().trim().max(300),
+      }),
+      {
+        targetOrgId: str(formData, "targetOrgId"),
+        componentType: str(formData, "componentType"),
+        bloodGroup: str(formData, "bloodGroup"),
+        unitsRequested: str(formData, "unitsRequested") || "0",
+        urgency: str(formData, "urgency") || "ROUTINE",
+        note: str(formData, "note"),
+      }
+    );
+    await createBloodRequest({
+      requestingOrgId: organizationId,
+      targetOrgId: input.targetOrgId,
+      componentType: input.componentType,
+      bloodGroup: input.bloodGroup,
+      unitsRequested: input.unitsRequested,
+      urgency: input.urgency,
+      note: input.note || null,
+      requestedById: userId,
+    });
+    revalidatePath("/staff");
+    return { ok: true, message: getDictionary().requests.created };
+  } catch (err) {
+    return opsFailure(err);
+  }
+}
+
+export async function fulfillBloodRequestAction(
+  _prev: OpsActionState | null,
+  formData: FormData
+): Promise<OpsActionState> {
+  const organizationId = str(formData, "organizationId"); // the fulfilling blood bank
+  let userId: string;
+  try {
+    await requireCsrf(formData);
+    userId = await staffGate(organizationId);
+  } catch (err) {
+    return opsFailure(err);
+  }
+  try {
+    const requestId = parsed(z.string().uuid(), str(formData, "requestId"));
+    const componentIds = formData
+      .getAll("componentIds")
+      .filter((v): v is string => typeof v === "string");
+    const result = await fulfillBloodRequest(organizationId, requestId, componentIds);
+    revalidatePath("/staff");
+    const d = getDictionary();
+    if (result.reservedComponentIds.length === 0) {
+      return { ok: false, message: `${d.staff.errValidation} (${result.skipped.map((s) => s.reason).join(", ")})` };
+    }
+    return { ok: true, message: `${d.requests.fulfillDone} (${result.fulfilledCount}/${result.skipped.length + result.fulfilledCount})` };
+  } catch (err) {
+    return opsFailure(err);
+  }
+}
+
+export async function declineBloodRequestAction(formData: FormData): Promise<void> {
+  const organizationId = str(formData, "organizationId");
+  try {
+    await requireCsrf(formData);
+    await staffGate(organizationId);
+    const requestId = z.string().uuid().parse(str(formData, "requestId"));
+    await declineBloodRequest(organizationId, requestId, str(formData, "reason"));
+  } catch (err) {
+    if (isNextRedirectError(err)) throw err;
+    // Plain-form actions have no state channel; failures stay in the audit log
+    // and the panel re-renders with the request still open.
+  }
+  revalidatePath("/staff");
+}
+
+export async function cancelBloodRequestAction(formData: FormData): Promise<void> {
+  const organizationId = str(formData, "organizationId");
+  try {
+    await requireCsrf(formData);
+    await staffGate(organizationId);
+    const requestId = z.string().uuid().parse(str(formData, "requestId"));
+    await cancelBloodRequest(organizationId, requestId);
+  } catch (err) {
+    if (isNextRedirectError(err)) throw err;
+  }
+  revalidatePath("/staff");
 }
 
 // ---------------------------------------------------------------------------

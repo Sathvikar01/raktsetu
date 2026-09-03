@@ -10,6 +10,7 @@ import {
   rateLimitPersistent,
 } from "@/lib/rate-limit";
 import { prisma } from "@/packages/database/client";
+import { dispatchDonorNotification } from "@/packages/notifications/service";
 import { getDictionary } from "@/i18n";
 import type { PartnerRequestState } from "./types";
 
@@ -90,6 +91,22 @@ export async function submitPartnerRequestAction(
     resourceType: "PartnerRequest",
     metadata: { orgKind: data.orgKind },
   });
+
+  // Surface the queue to platform admins immediately — the review table on
+  // /admin/platform is only useful if somebody knows it has new rows.
+  const platformAdmins = await prisma.user.findMany({
+    where: { role: "PLATFORM_ADMIN", status: "ACTIVE" },
+    select: { id: true },
+  });
+  for (const admin of platformAdmins) {
+    await dispatchDonorNotification({
+      userId: admin.id,
+      typeKey: "notify.partner.request",
+      genericTitle: true,
+      titleKey: "notify.genericUpdateTitle",
+      bodyKey: "notify.genericUpdateBody",
+    });
+  }
 
   return { ok: true, message: t.successTitle };
 }
