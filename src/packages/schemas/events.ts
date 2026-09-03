@@ -33,6 +33,10 @@ export const COMPONENT_EVENTS: EventType[] = [
 export const COMPONENT_TYPES = ["RBC", "PLASMA", "PLATELET", "WHOLE_BLOOD", "OTHER"] as const;
 export type ComponentType = (typeof COMPONENT_TYPES)[number];
 
+/** ABO/Rh groups recorded by blood banks at collection (inventory facts). */
+export const BLOOD_GROUPS = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"] as const;
+export type BloodGroup = (typeof BLOOD_GROUPS)[number];
+
 export const VERIFICATION_STATUSES = ["VERIFIED", "PENDING", "REJECTED"] as const;
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 

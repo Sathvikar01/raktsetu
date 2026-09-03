@@ -35,6 +35,8 @@ export interface DerivedEventView {
 export interface DerivationResult<T> {
   state: T | null;
   lastVerifiedEvent: DerivedEventView | null;
+  /** Facility of the last verified, non-superseded event — the component's current location. */
+  lastFacilityId: string | null;
   awaitingVerification: boolean;
   flags: DerivationFlag[];
 }
@@ -96,7 +98,13 @@ export function deriveComponentState(
     lastVerifiedEvent = e;
   }
 
-  return { state, lastVerifiedEvent, awaitingVerification, flags };
+  return {
+    state,
+    lastVerifiedEvent,
+    lastFacilityId: lastVerifiedEvent?.facilityId ?? null,
+    awaitingVerification,
+    flags,
+  };
 }
 
 function applyComponentEvent(current: ComponentState | null, t: EventType): ComponentState | undefined {
